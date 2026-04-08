@@ -30,7 +30,7 @@ TrainingHub pulls your activity history from Garmin Connect, computes training m
 ### Install
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/cm-maple7/TrainingHub.git
 cd garmin
 pip install -r requirements.txt
 ```
