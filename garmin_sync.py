@@ -4,7 +4,8 @@ Garmin Connect workout sync — pulls activity history and saves to JSON
 for Claude to read and build training protocols.
 
 Usage:
-    python3 garmin_sync.py              # sync last 90 days
+    python3 garmin_sync.py              # incremental sync (new activities only)
+    python3 garmin_sync.py --full       # full re-sync (5 years)
     python3 garmin_sync.py --days 180   # sync last 180 days
     python3 garmin_sync.py --summary    # print summary after sync
     python3 garmin_sync.py --sleep      # also pull last 30 days of sleep
@@ -24,6 +25,9 @@ load_dotenv()
 DATA_DIR = Path(__file__).parent / "garmin_data"
 DATA_DIR.mkdir(exist_ok=True)
 TOKEN_DIR = DATA_DIR / ".tokens"
+ACTIVITIES_FILE = DATA_DIR / "activities.json"
+FIRST_SYNC_DAYS = 5 * 365  # 5 years for first sync
+INCREMENTAL_OVERLAP = 3     # re-fetch last 3 days to catch edits/late syncs
 
 
 def login():
@@ -54,13 +58,51 @@ def login():
     return api
 
 
-def fetch_activities(api, days: int) -> list:
-    end = date.today()
-    start = end - timedelta(days=days)
-    print(f"Fetching activities {start} → {end}...")
-    activities = api.get_activities_by_date(str(start), str(end))
+def load_existing() -> list:
+    """Load existing activities from disk."""
+    if ACTIVITIES_FILE.exists():
+        try:
+            with open(ACTIVITIES_FILE) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            pass
+    return []
+
+
+def get_last_activity_date(activities: list) -> str | None:
+    """Find the most recent activity date in existing data."""
+    if not activities:
+        return None
+    latest = None
+    for a in activities:
+        d = a.get("startTimeLocal", "")[:10]
+        if d and (latest is None or d > latest):
+            latest = d
+    return latest
+
+
+def fetch_activities(api, start_date: date, end_date: date) -> list:
+    print(f"Fetching activities {start_date} → {end_date}...")
+    activities = api.get_activities_by_date(str(start_date), str(end_date))
     print(f"  Found {len(activities)} activities.")
     return activities
+
+
+def merge_activities(existing: list, new: list) -> list:
+    """Merge new activities into existing, deduplicating by activityId.
+    New activities take precedence (in case data was updated on Garmin)."""
+    by_id = {}
+    for a in existing:
+        aid = a.get("activityId")
+        if aid:
+            by_id[aid] = a
+    for a in new:
+        aid = a.get("activityId")
+        if aid:
+            by_id[aid] = a  # overwrite with newer version
+    merged = list(by_id.values())
+    merged.sort(key=lambda a: a.get("startTimeLocal", ""), reverse=True)
+    return merged
 
 
 def fetch_max_metrics(api) -> dict:
@@ -147,8 +189,10 @@ def print_summary(activities: list):
 
 def main():
     parser = argparse.ArgumentParser(description="Sync Garmin workout history")
-    parser.add_argument("--days", type=int, default=90,
-                        help="Days of history to pull (default: 90)")
+    parser.add_argument("--days", type=int, default=None,
+                        help="Days of history to pull")
+    parser.add_argument("--full", action="store_true",
+                        help="Full re-sync (5 years of history)")
     parser.add_argument("--summary", action="store_true",
                         help="Print activity summary after sync")
     parser.add_argument("--sleep", action="store_true",
@@ -157,9 +201,39 @@ def main():
 
     api = login()
 
-    # Activities
-    raw_activities = fetch_activities(api, args.days)
-    activities = [clean_activity(a) for a in raw_activities]
+    # Load existing activities
+    existing = load_existing()
+    last_date = get_last_activity_date(existing)
+
+    # Determine sync range
+    end = date.today()
+    if args.full:
+        start = end - timedelta(days=FIRST_SYNC_DAYS)
+        print(f"Full sync: pulling {FIRST_SYNC_DAYS // 365} years of history...")
+    elif args.days:
+        start = end - timedelta(days=args.days)
+    elif last_date:
+        # Incremental: from last activity minus overlap to today
+        start = date.fromisoformat(last_date) - timedelta(days=INCREMENTAL_OVERLAP)
+        print(f"Incremental sync: last activity was {last_date}, fetching from {start}...")
+    else:
+        # First sync ever — pull 5 years
+        start = end - timedelta(days=FIRST_SYNC_DAYS)
+        print(f"First sync: pulling {FIRST_SYNC_DAYS // 365} years of history...")
+
+    # Fetch and merge
+    raw_activities = fetch_activities(api, start, end)
+    new_cleaned = [clean_activity(a) for a in raw_activities]
+
+    if existing and not args.full:
+        activities = merge_activities(existing, new_cleaned)
+        new_count = len(activities) - len(existing)
+        print(f"  Merged: {new_count} new, {len(activities)} total")
+    else:
+        activities = new_cleaned
+        activities.sort(key=lambda a: a.get("startTimeLocal", ""), reverse=True)
+        print(f"  Total: {len(activities)} activities")
+
     save("activities.json", activities)
 
     # VO2max / fitness metrics
@@ -179,7 +253,7 @@ def main():
 
     # Sleep (optional flag)
     if args.sleep:
-        sleep = fetch_sleep(api, args.days)
+        sleep = fetch_sleep(api, args.days or 30)
         if sleep:
             save("sleep.json", sleep)
         else:
@@ -188,7 +262,7 @@ def main():
     if args.summary:
         print_summary(raw_activities)
 
-    print("\nDone. Ask Claude to read garmin_data/ and build your training protocol.")
+    print("\nDone. Run `python3 fitness_analysis.py --open` to view your dashboard.")
 
 
 if __name__ == "__main__":

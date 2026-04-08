@@ -1582,16 +1582,11 @@ function legendLabels(opts) {
 function chartOpts(opts) {
   const titleCb = { title(items) {
     if (!items.length) return '';
-    const raw = items[0].raw;
-    const d = raw?.x || items[0].label;
-    // d could be "2026-02-02" or a Date or a locale string like "Feb 2, 2026, 12:00:00 a.m."
-    if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return fmtDate(d);
-    // Parse from the chart's x scale
-    const parsed = items[0].parsed?.x;
-    if (parsed) { const dt = new Date(parsed); return dt.toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}); }
-    // Fallback: strip time from label
-    const label = items[0].label || '';
-    return label.replace(/,?\s*\d{1,2}:\d{2}:\d{2}\s*(a\.?m\.?|p\.?m\.?|AM|PM)?/i, '').trim();
+    // Use the max parsed.x across all tooltip items — projected datasets
+    // have the correct future timestamps, actual datasets may map to old indices
+    const ts = Math.max(...items.map(i => i.parsed?.x || 0));
+    if (ts > 1e11) return new Date(ts).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+    return items[0].label || '';
   } };
   const base = { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false } };
   const merged = { ...base, ...opts };
@@ -1806,7 +1801,7 @@ function renderDashboard(S) {
   const xUnit = dashRange === '12w' ? 'week' : 'month';
   // Identical x-axis for all 3 charts
   const {xMin, xMax} = getXBounds();
-  const sharedX = {type:'time',offset:false,min:xMin,max:xMax,time:{unit:xUnit,displayFormats:{week:"MMM d",month:"MMM ''yy"}},ticks:{color:TC(),maxTicksLimit:12},grid:{color:GC()}};
+  const sharedX = {type:'time',offset:false,min:xMin,max:xMax,time:{unit:xUnit,displayFormats:{week:"MMM d",month:"MMM ''yy"}},ticks:{color:TC(),maxTicksLimit:12},grid:{color:GC(),offset:false}};
 
   // Life events plugin — draws vertical markers on the TSB chart
   const lifeEventsPlugin = {
@@ -2039,7 +2034,7 @@ function renderRunning(S) {
     data:{datasets:[{ label:'Pace', data:pr.map(r=>({x:r.date,y:r.pace_mi})), ...dotStyle('--color-run') }]},
     options: chartOpts({
       scales:{
-        x:{type:'time',time:{unit:'month',displayFormats:{month:"MMM ''yy"}},ticks:{color:TC()},grid:{color:GC()}},
+        x:{type:'time',offset:false,time:{unit:'month',displayFormats:{month:"MMM ''yy"}},ticks:{color:TC()},grid:{color:GC(),offset:false}},
         y:{reverse:true,ticks:{color:TC(),callback:v=>fmtPace(v)},grid:{color:GC()},title:{display:true,text:'Pace (min/mi)',color:TC()}},
       },
       plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${fmtPace(c.raw.y)}/mi`}}}
@@ -2090,7 +2085,7 @@ function renderCycling(S) {
     },
     options: chartOpts({
       scales:{
-        x:{ticks:{color:TC()},grid:{color:GC()}},
+        x:{offset:false,ticks:{color:TC()},grid:{color:GC(),offset:false}},
         y:{ticks:{color:TC()},grid:{color:GC()},title:{display:true,text:'Watts',color:TC()}},
       },
       plugins:{legend:{labels:legendLabels()},
@@ -2124,7 +2119,7 @@ function renderSwimming(S) {
     data:{datasets:[{ label:'Pace', data:ps.map(s=>({x:s.date,y:s.pace_100yd})), ...dotStyle('--color-swim') }]},
     options: chartOpts({
       scales:{
-        x:{type:'time',time:{unit:'month',displayFormats:{month:"MMM ''yy"}},ticks:{color:TC()},grid:{color:GC()}},
+        x:{type:'time',offset:false,time:{unit:'month',displayFormats:{month:"MMM ''yy"}},ticks:{color:TC()},grid:{color:GC(),offset:false}},
         y:{reverse:true,ticks:{color:TC(),callback:v=>fmtPace(v)},grid:{color:GC()},title:{display:true,text:'Pace (/100yd)',color:TC()}},
       },
       plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${fmtPace(c.raw.y)}/100yd`}}}
