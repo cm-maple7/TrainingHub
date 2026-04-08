@@ -1,0 +1,12 @@
+# Credentials
+.env
+
+# Synced data and generated dashboard
+garmin_data/
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
