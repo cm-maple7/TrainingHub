@@ -1580,7 +1580,27 @@ function legendLabels(opts) {
 }
 // Standard chart options base
 function chartOpts(opts) {
-  return { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, ...opts };
+  const titleCb = { title(items) {
+    if (!items.length) return '';
+    const raw = items[0].raw;
+    const d = raw?.x || items[0].label;
+    // d could be "2026-02-02" or a Date or a locale string like "Feb 2, 2026, 12:00:00 a.m."
+    if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return fmtDate(d);
+    // Parse from the chart's x scale
+    const parsed = items[0].parsed?.x;
+    if (parsed) { const dt = new Date(parsed); return dt.toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}); }
+    // Fallback: strip time from label
+    const label = items[0].label || '';
+    return label.replace(/,?\s*\d{1,2}:\d{2}:\d{2}\s*(a\.?m\.?|p\.?m\.?|AM|PM)?/i, '').trim();
+  } };
+  const base = { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false } };
+  const merged = { ...base, ...opts };
+  // Ensure tooltip title callback is always present
+  if (!merged.plugins) merged.plugins = {};
+  if (!merged.plugins.tooltip) merged.plugins.tooltip = {};
+  if (!merged.plugins.tooltip.callbacks) merged.plugins.tooltip.callbacks = {};
+  merged.plugins.tooltip.callbacks = { ...titleCb, ...merged.plugins.tooltip.callbacks };
+  return merged;
 }
 
 // ═══════════════════════════════════════
@@ -1813,17 +1833,6 @@ function renderDashboard(S) {
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.globalAlpha = 1;
-        // Colored dot at top
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(px, top + 10, 5, 0, Math.PI * 2);
-        ctx.fill();
-        // White icon/letter inside dot
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 7px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(ev.type[0].toUpperCase(), px, top + 10);
       });
       ctx.restore();
       // Store positions for tooltip hit detection
@@ -1853,7 +1862,7 @@ function renderDashboard(S) {
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     const hit = chart._lifeEventPositions.find(ev =>
-      Math.abs(ev.px - mx) < 12 && my < chart.chartArea.top + 24 && my > chart.chartArea.top - 4
+      Math.abs(ev.px - mx) < 12 && my >= chart.chartArea.top && my <= chart.chartArea.bottom
     );
     if (hit) {
       const color = css(hit.etype.color);
