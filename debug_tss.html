@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html><body style="font-family:monospace;background:#111;color:#ddd;padding:20px;font-size:12px;">
+<pre id="out">Loading...</pre>
+<script src="engine.js"></script>
+<script src="strava.js"></script>
+<script>
+(async () => {
+  const out = document.getElementById('out');
+  const acts = await getStoredActivities();
+  const D = computeAll(acts, {});
+  const lthrRun = D.effective.lthr_run;
+  const lthrBike = D.effective.lthr_bike;
+  const ftp = D.effective.ftp;
+  
+  // Find activities with TSS > 0 but no meaningful HR/power
+  let txt = '=== Activities generating TSS with questionable data ===\n';
+  txt += 'date       | type                 | dur_min | avgHR | NP  | TSS | name\n';
+  txt += '-'.repeat(100) + '\n';
+  
+  let suspicious = 0;
+  acts.forEach(a => {
+    const tss = calcTSS(a, lthrRun, lthrBike, ftp);
+    const avgHR = a.averageHR || 0;
+    const np = a.normPower || 0;
+    const dur = (a.duration || 0) / 60;
+    const atype = (a.activityType || {}).typeKey || '?';
+    
+    // Show activities that are "other"/workout types with non-zero TSS
+    // OR any activity with TSS > 0 but low/no HR
+    const isEndurance = RUN_TYPES.includes(atype) || BIKE_TYPES.includes(atype) || SWIM_TYPES.includes(atype);
+    if (tss > 0 && (!isEndurance || avgHR < 50)) {
+      txt += `${(a.startTimeLocal||'').slice(0,10)} | ${atype.padEnd(20)} | ${dur.toFixed(0).padStart(7)} | ${String(avgHR).padStart(5)} | ${String(np).padStart(3)} | ${String(tss).padStart(3)} | ${(a.activityName||'').slice(0,30)}\n`;
+      suspicious++;
+    }
+  });
+  txt += `\n${suspicious} suspicious activities found\n`;
+  
+  // Also show ALL activities with TSS > 0 for a recent week to cross-check
+  txt += '\n=== All activities with TSS for W14 (Mar 30 - Apr 5) ===\n';
+  txt += 'date       | type                 | dur_min | avgHR | NP  | TSS | name\n';
+  txt += '-'.repeat(100) + '\n';
+  acts.filter(a => {
+    const d = (a.startTimeLocal||'').slice(0,10);
+    return d >= '2026-03-30' && d <= '2026-04-05';
+  }).forEach(a => {
+    const tss = calcTSS(a, lthrRun, lthrBike, ftp);
+    const avgHR = a.averageHR || 0;
+    const np = a.normPower || 0;
+    const dur = (a.duration || 0) / 60;
+    const atype = (a.activityType || {}).typeKey || '?';
+    txt += `${(a.startTimeLocal||'').slice(0,10)} | ${atype.padEnd(20)} | ${dur.toFixed(0).padStart(7)} | ${String(avgHR).padStart(5)} | ${String(np).padStart(3)} | ${String(tss).padStart(3)} | ${(a.activityName||'').slice(0,30)}\n`;
+  });
+  
+  out.textContent = txt;
+})();
+</script></body></html>

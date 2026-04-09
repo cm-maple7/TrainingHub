@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html><head><title>Debug</title>
+<style>body{font-family:monospace;background:#111;color:#ddd;padding:20px;font-size:13px;} pre{white-space:pre-wrap;}</style>
+</head><body>
+<h2>TrainingHub Data Debug</h2>
+<button id="btn" style="padding:10px 20px;font-size:14px;cursor:pointer;">Load & Compare</button>
+<pre id="out">Click the button to analyze IndexedDB data...</pre>
+<script src="engine.js"></script>
+<script src="strava.js"></script>
+<script>
+document.getElementById('btn').addEventListener('click', async () => {
+  const out = document.getElementById('out');
+  out.textContent = 'Loading...\n';
+  
+  const acts = await getStoredActivities();
+  out.textContent += `Total activities in IndexedDB: ${acts.length}\n\n`;
+  
+  // Count by type
+  const types = {};
+  acts.forEach(a => {
+    const t = (a.activityType || {}).typeKey || 'unknown';
+    types[t] = (types[t] || 0) + 1;
+  });
+  out.textContent += '=== Activity Types ===\n';
+  Object.entries(types).sort((a,b) => b[1]-a[1]).forEach(([t,c]) => {
+    out.textContent += `  ${t}: ${c}\n`;
+  });
+  
+  // Compute
+  const D = computeAll(acts, {});
+  
+  out.textContent += '\n=== JS Effective Values ===\n';
+  for (const [k,v] of Object.entries(D.effective)) {
+    out.textContent += `  ${k}: ${v}\n`;
+  }
+  
+  out.textContent += '\n=== TSB (last 10 actual days) ===\n';
+  const actual = D.tsb.filter(d => !d.projected);
+  actual.slice(-10).forEach(d => {
+    out.textContent += `  ${d.date}: CTL=${d.ctl} ATL=${d.atl} TSB=${d.tsb} TSS=${d.tss}\n`;
+  });
+  
+  out.textContent += '\n=== Weekly Volume (last 6 weeks) ===\n';
+  const wvKeys = Object.keys(D.weekly_volume).sort().slice(-6);
+  wvKeys.forEach(k => {
+    const v = D.weekly_volume[k];
+    out.textContent += `  ${k}: run=${v.run} bike=${v.bike} swim=${v.swim} other=${v.other}\n`;
+  });
+  
+  // Spot check 2026-04-06
+  out.textContent += '\n=== Spot Check: 2026-04-06 activities ===\n';
+  acts.filter(a => (a.startTimeLocal||'').startsWith('2026-04-06')).forEach(a => {
+    const t = (a.activityType||{}).typeKey||'?';
+    out.textContent += `  ${t}: dur=${a.duration}s avgHR=${a.averageHR} NP=${a.normPower} name=${a.activityName||''}\n`;
+  });
+  
+  // Spot check W13 bike activities
+  out.textContent += '\n=== W13 (Mar 23-29) all activities ===\n';
+  acts.filter(a => {
+    const d = (a.startTimeLocal||'').slice(0,10);
+    return d >= '2026-03-23' && d <= '2026-03-29';
+  }).forEach(a => {
+    const t = (a.activityType||{}).typeKey||'?';
+    out.textContent += `  ${(a.startTimeLocal||'').slice(0,10)} | ${t.padEnd(20)} | dur=${(a.duration/3600).toFixed(2)}h | name=${(a.activityName||'').slice(0,35)}\n`;
+  });
+
+  out.textContent += '\n=== Python comparison (expected) ===\n';
+  out.textContent += '  W13: run=1.9 bike=6.1 swim=0 other=0\n';
+  out.textContent += '  2026-04-08: CTL=31.8 ATL=42.5 TSB=-10.7 TSS=0\n';
+  out.textContent += '  effective: ftp=300 lthr_run=177 lthr_bike=172\n';
+});
+</script>
+</body></html>

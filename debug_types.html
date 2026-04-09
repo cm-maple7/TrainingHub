@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html><body style="font-family:monospace;background:#111;color:#ddd;padding:20px;">
+<pre id="out">Loading...</pre>
+<script src="strava.js"></script>
+<script>
+(async () => {
+  const tok = await stravaEnsureToken();
+  if (!tok) { document.getElementById('out').textContent = 'No token'; return; }
+  // Fetch ALL activities to see raw Strava types
+  const all = [];
+  let page = 1;
+  while (true) {
+    const resp = await fetch(`https://www.strava.com/api/v3/athlete/activities?per_page=200&page=${page}`, {
+      headers: { 'Authorization': 'Bearer ' + tok }
+    });
+    const batch = await resp.json();
+    if (!batch.length) break;
+    all.push(...batch);
+    if (batch.length < 200) break;
+    page++;
+  }
+  // Count raw Strava types
+  const types = {};
+  all.forEach(a => { types[a.type] = (types[a.type] || 0) + 1; });
+  let out = `Total: ${all.length} activities\n\n=== Raw Strava Types ===\n`;
+  Object.entries(types).sort((a,b) => b[1]-a[1]).forEach(([t,c]) => {
+    out += `  ${t}: ${c}\n`;
+  });
+  
+  // Show which ones map to 'other'
+  const mapped = {};
+  all.forEach(a => {
+    const mk = (STRAVA_TYPE_MAP[a.type] || 'other');
+    if (mk === 'other') mapped[a.type] = (mapped[a.type] || 0) + 1;
+  });
+  out += '\n=== Strava types mapping to "other" ===\n';
+  Object.entries(mapped).sort((a,b) => b[1]-a[1]).forEach(([t,c]) => {
+    out += `  ${t}: ${c}\n`;
+  });
+  document.getElementById('out').textContent = out;
+})();
+</script></body></html>
