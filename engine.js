@@ -126,6 +126,16 @@ function estimateCSS(acts) {
   return Math.round(swims[idx]);
 }
 
+// ── RPE-based TSS ───────────────────────────────────────────────
+
+const RPE_TO_IF = [0, 0.50, 0.55, 0.60, 0.65, 0.72, 0.80, 0.88, 0.95, 1.03, 1.10];
+
+function calcRpeTSS(durationSec, rpe) {
+  if (!durationSec || durationSec <= 0 || !rpe || rpe < 1 || rpe > 10) return 0;
+  const ifVal = RPE_TO_IF[Math.round(rpe)];
+  return Math.round((durationSec / 3600) * ifVal * ifVal * 100);
+}
+
 // ── TSS calculation ──────────────────────────────────────────────
 
 function calcTSS(activity, lthrRun, lthrBike, ftp) {
@@ -140,7 +150,10 @@ function calcTSS(activity, lthrRun, lthrBike, ftp) {
     return Math.round((dur / 3600) * intensity * intensity * 100);
   }
   // hrTSS fallback
-  if (avgHR <= 0) return 0;
+  if (avgHR <= 0) {
+    if (activity.rpe > 0) return calcRpeTSS(dur, activity.rpe);
+    return 0;
+  }
   const lthr = RUN_TYPES.includes(atype) ? lthrRun : BIKE_TYPES.includes(atype) ? lthrBike : lthrRun;
   if (lthr <= 0) return 0;
   return Math.round((dur / 3600) * Math.pow(avgHR / lthr, 3.5) * 100);

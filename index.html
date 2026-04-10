@@ -6,8 +6,8 @@
 <title>TrainingHub</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-<script src="engine.js?v=7"></script>
-<script src="strava.js?v=3"></script>
+<script src="engine.js?v=8"></script>
+<script src="strava.js?v=4"></script>
 <style>
 :root, [data-theme="dark"] {
   --bg: #111318;
@@ -260,6 +260,45 @@ tr:hover td { background: var(--bg-hover); }
 .learn-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
 .learn-table tbody tr:last-child td { border-bottom: none; }
 
+.ql-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; margin-bottom: 0; }
+.ql-form .ql-full { grid-column: 1 / -1; }
+.ql-form label { display: block; font-size: 11px; font-weight: 500; color: var(--text-faint); margin-bottom: 4px; }
+.ql-form input, .ql-form select {
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  width: 100%; height: 36px; background: var(--bg); border: 1px solid var(--border-active); color: var(--text);
+  padding: 0 12px; border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font);
+  transition: border-color 0.2s; box-sizing: border-box;
+}
+.ql-form select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23888'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;
+}
+.ql-form input:focus, .ql-form select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-soft); }
+.ql-dur { display: flex; gap: 8px; }
+.ql-dur input { width: 50%; }
+.rpe-row { display: flex; gap: 5px; align-items: center; flex-wrap: nowrap; }
+.rpe-row button[data-tip] {
+  position: relative; flex: 1; min-width: 0; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--border-active);
+  background: var(--bg); color: var(--text-dim); font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: var(--font); transition: all 0.15s; padding: 0;
+}
+.rpe-row button[data-tip]:hover { border-color: var(--blue); color: var(--text); }
+.rpe-row button[data-tip].selected { background: var(--blue); border-color: var(--blue); color: #fff; }
+.rpe-row button[data-tip]::after {
+  content: attr(data-tip); position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--bg-card); border: 1px solid var(--border); color: var(--text); font-size: 11px; font-weight: 400;
+  padding: 3px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity 0.15s; z-index: 10;
+}
+.rpe-row button[data-tip]:hover::after { opacity: 1; }
+.ql-tss-preview { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+.ql-tss-preview:empty { display: none; }
+.ql-toast { display: inline-block; color: var(--green); font-size: 13px; font-weight: 500; margin-left: 12px; opacity: 0; transition: opacity 0.3s; }
+.ql-toast.show { opacity: 1; }
+.ql-history { margin-top: 8px; }
+.ql-history table { width: 100%; }
+.ql-history .delete-ql { cursor: pointer; color: var(--text-faint); font-size: 11px; }
+.ql-history .delete-ql:hover { color: var(--red); }
 .evt-form {
   display: grid; grid-template-columns: 140px 110px 1fr 150px auto; gap: 10px; align-items: end;
   margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
@@ -288,28 +327,6 @@ tr:hover td { background: var(--bg-hover); }
 
 .zone-card table td:first-child { font-weight: 500; }
 .zone-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; vertical-align: middle; }
-
-.quick-log { padding: 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
-.quick-log .card-label { margin-bottom: 8px; }
-.quick-log p { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.5; }
-.quick-log-row { display: flex; gap: 10px; align-items: stretch; }
-.quick-log-input {
-  flex: 1; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-faint);
-  padding: 12px 16px; border-radius: var(--radius-sm); font-size: 14px; font-family: var(--font); cursor: default;
-}
-.quick-log-input::placeholder { color: var(--text-faint); }
-.quick-log-btn {
-  display: flex; align-items: center; gap: 6px; padding: 0 20px;
-  background: var(--bg-hover); border: 1px solid var(--border); border-radius: var(--radius-sm);
-  color: var(--text-faint); font-size: 13px; font-weight: 500; font-family: var(--font);
-  cursor: default; white-space: nowrap;
-}
-.quick-log-btn svg { width: 16px; height: 16px; }
-.coming-soon-tag {
-  display: inline-block; font-size: 10px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.8px; color: var(--text-faint); background: var(--bg-hover);
-  padding: 3px 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle;
-}
 
 /* ── Welcome Overlay ── */
 .welcome-overlay {
@@ -524,15 +541,50 @@ tr:hover td { background: var(--bg-hover); }
       <div class="chart-wrap-sm"><canvas id="volumeChart"></canvas></div>
     </div>
   </div>
-  <div class="quick-log">
-    <div class="card-label">Quick Log <span class="coming-soon-tag">Coming Soon</span></div>
-    <p>Describe a workout in plain text or upload a .fit file. The AI will parse it into a structured activity automatically.</p>
-    <div class="quick-log-row">
-      <input class="quick-log-input" type="text" placeholder='e.g. "45 min easy run, avg HR 145, 5.2 miles"' disabled>
-      <div class="quick-log-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Upload .fit
+  <div class="grid">
+    <div class="card">
+      <div class="card-label">Quick Log</div>
+      <p class="chart-note" style="margin-bottom:14px">Manually log a workout when you don't have device data. TSS is estimated from HR or RPE.</p>
+      <div class="ql-form">
+        <div><label>Date</label><input type="date" id="ql-date"></div>
+        <div><label>Sport</label>
+          <select id="ql-sport">
+            <option value="running">Run</option>
+            <option value="trail_running">Trail Run</option>
+            <option value="road_biking">Road Bike</option>
+            <option value="gravel_cycling">Gravel Bike</option>
+            <option value="mountain_biking">Mountain Bike</option>
+            <option value="virtual_ride">Indoor Bike</option>
+            <option value="lap_swimming">Pool Swim</option>
+            <option value="open_water_swimming">Open Water Swim</option>
+            <option value="hiking">Hike</option>
+            <option value="strength_training">Strength</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="ql-full"><label>Activity Name (optional)</label><input type="text" id="ql-name" placeholder="e.g. Morning Run"></div>
+        <div><label>Distance (miles)</label><input type="number" id="ql-dist" step="0.01" min="0" placeholder="0.00"></div>
+        <div><label>Duration</label>
+          <div class="ql-dur">
+            <input type="number" id="ql-hrs" min="0" max="24" placeholder="hrs">
+            <input type="number" id="ql-min" min="0" max="59" placeholder="min">
+          </div>
+        </div>
+        <div><label>Avg Heart Rate (optional)</label><input type="number" id="ql-hr" min="30" max="230" placeholder="e.g. 152"></div>
+        <div><label>Elevation Gain ft (optional)</label><input type="number" id="ql-elev" min="0" placeholder="e.g. 500"></div>
+        <div class="ql-full">
+          <label>RPE — Rate of Perceived Exertion</label>
+          <div class="rpe-row" id="ql-rpe-row">
+            <button id="ql-save-btn" class="btn btn-primary" style="margin-left:8px;height:34px;padding:0 20px;flex-shrink:0;">Save Activity</button>
+          </div>
+          <span class="ql-toast" id="ql-toast">Saved!</span>
+          <div class="ql-tss-preview" id="ql-tss-preview"></div>
+        </div>
       </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;">
+      <div class="card-label">Quick-Logged Activities</div>
+      <div class="ql-history" id="ql-history" style="flex:1;"></div>
     </div>
   </div>
 </div>
@@ -824,6 +876,25 @@ tr:hover td { background: var(--bg-hover); }
       </div>
     </div>
 
+    <div class="card learn-card">
+      <h3>RPE — Rate of Perceived Exertion</h3>
+      <p>RPE is a subjective 1–10 scale for how hard a workout felt. It's useful for logging workouts without a heart rate monitor or power meter. TrainingHub uses RPE to estimate TSS when no device data is available.</p>
+      <table class="learn-table">
+        <tr><th>RPE</th><th>Effort</th><th>Description</th><th>~HR Zone</th></tr>
+        <tr><td>1</td><td>Minimal</td><td>Barely moving, very light walking</td><td>—</td></tr>
+        <tr><td>2</td><td>Very Easy</td><td>Easy walk, warm-up pace</td><td>Z1</td></tr>
+        <tr><td>3</td><td>Easy</td><td>Easy jog, conversational, could go for hours</td><td>Z1–Z2</td></tr>
+        <tr><td>4</td><td>Moderate</td><td>Comfortable but purposeful, still conversational</td><td>Z2</td></tr>
+        <tr><td>5</td><td>Somewhat Hard</td><td>Steady effort, can speak in sentences</td><td>Z2–Z3</td></tr>
+        <tr><td>6</td><td>Hard</td><td>Tempo effort, sentences become difficult</td><td>Z3</td></tr>
+        <tr><td>7</td><td>Very Hard</td><td>Threshold effort, only a few words at a time</td><td>Z4</td></tr>
+        <tr><td>8</td><td>Extremely Hard</td><td>VO2max intervals, can barely speak</td><td>Z4–Z5</td></tr>
+        <tr><td>9</td><td>Near Max</td><td>All-out repeats, unsustainable beyond minutes</td><td>Z5</td></tr>
+        <tr><td>10</td><td>Maximum</td><td>Sprint finish, absolute max effort</td><td>Z5+</td></tr>
+      </table>
+      <p style="margin-top:12px">When you log an activity with RPE but no heart rate, TSS is estimated as: <strong>TSS = hours &times; IF&sup2; &times; 100</strong>, where the Intensity Factor (IF) is derived from the RPE-to-IF mapping above. This gives a reasonable training load estimate for activities like strength sessions, hikes, or any workout without a sensor.</p>
+    </div>
+
   </div>
 </div>
 
@@ -866,6 +937,7 @@ tr:hover td { background: var(--bg-hover); }
   </div>
 </div>
 
+<!-- QUICK LOG -->
 </div><!-- /.main -->
 
 <script>
@@ -1297,6 +1369,7 @@ function renderAll() {
   renderSwimming(S);
   renderZones(S);
   renderSettings(S);
+  renderQuickLogHistory();
 }
 
 function renderDashboard(S) {
@@ -1990,6 +2063,147 @@ function renderInsights(S) {
     h += `<div class="insight ${ins.color}"><div class="insight-title">${ins.title}</div><div class="insight-body">${ins.body}</div></div>`;
   });
   document.getElementById('insights-card').innerHTML = h + '</div>';
+}
+
+// ═══════════════════════════════════════
+//  QUICK LOG
+// ═══════════════════════════════════════
+(function initQuickLog() {
+  // Set default date to today
+  const dateEl = document.getElementById('ql-date');
+  dateEl.value = new Date().toISOString().slice(0, 10);
+
+  // Build RPE buttons
+  const rpeRow = document.getElementById('ql-rpe-row');
+  const rpeLabels = ['','Minimal','Very easy','Easy','Moderate','Somewhat hard','Hard','Very hard','Extremely hard','Near max','Maximum'];
+  let selectedRpe = 0;
+  for (let i = 1; i <= 10; i++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = i;
+    btn.setAttribute('data-tip', rpeLabels[i]);
+    btn.addEventListener('click', () => {
+      rpeRow.querySelectorAll('button[data-tip]').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedRpe = i;
+      updateTssPreview();
+    });
+    rpeRow.insertBefore(btn, document.getElementById('ql-save-btn'));
+  }
+
+  function getFormDuration() {
+    return (Number(document.getElementById('ql-hrs').value) || 0) * 3600
+         + (Number(document.getElementById('ql-min').value) || 0) * 60;
+  }
+
+  function updateTssPreview() {
+    const preview = document.getElementById('ql-tss-preview');
+    const dur = getFormDuration();
+    const hr = Number(document.getElementById('ql-hr').value) || 0;
+    if (dur <= 0) { preview.textContent = ''; return; }
+
+    if (hr > 0) {
+      const ov = getOverrides();
+      const sport = document.getElementById('ql-sport').value;
+      const lthr = RUN_TYPES.includes(sport) ? (ov.lthrRun || 165) : (ov.lthrBike || 160);
+      const tss = Math.round((dur / 3600) * Math.pow(hr / lthr, 3.5) * 100);
+      preview.textContent = `Estimated TSS: ${tss} (HR-based)`;
+    } else if (selectedRpe > 0) {
+      const tss = calcRpeTSS(dur, selectedRpe);
+      preview.textContent = `Estimated TSS: ${tss} (RPE-based)`;
+    } else {
+      preview.textContent = 'Enter HR or select RPE to estimate TSS';
+    }
+  }
+
+  // Live preview on input changes
+  ['ql-hrs', 'ql-min', 'ql-hr', 'ql-sport'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateTssPreview);
+  });
+
+  // Save handler
+  document.getElementById('ql-save-btn').addEventListener('click', async () => {
+    const dur = getFormDuration();
+    if (dur <= 0) { alert('Enter a duration'); return; }
+
+    const distMi = Number(document.getElementById('ql-dist').value) || 0;
+    const distM = distMi * 1609.344;
+    const elevFt = Number(document.getElementById('ql-elev').value) || 0;
+    const sport = document.getElementById('ql-sport').value;
+
+    const activity = {
+      activityId: 'ql_' + Date.now(),
+      activityName: document.getElementById('ql-name').value || document.getElementById('ql-sport').selectedOptions[0].text,
+      activityType: { typeKey: sport },
+      startTimeLocal: document.getElementById('ql-date').value + ' 12:00:00',
+      duration: dur,
+      movingDuration: dur,
+      distance: distM,
+      averageHR: Number(document.getElementById('ql-hr').value) || 0,
+      maxHR: 0,
+      averageSpeed: dur > 0 && distM > 0 ? distM / dur : 0,
+      elevationGain: elevFt * 0.3048,
+      rpe: selectedRpe || 0,
+      _source: 'quicklog',
+    };
+
+    await dbPutAll([activity]);
+    D = computeAll(await dbGetAll(), getOverrides());
+    renderAll();
+    renderQuickLogHistory();
+
+    // Show toast
+    const toast = document.getElementById('ql-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+
+    // Reset form
+    document.getElementById('ql-name').value = '';
+    document.getElementById('ql-dist').value = '';
+    document.getElementById('ql-hrs').value = '';
+    document.getElementById('ql-min').value = '';
+    document.getElementById('ql-hr').value = '';
+    document.getElementById('ql-elev').value = '';
+    rpeRow.querySelectorAll('button[data-tip]').forEach(b => b.classList.remove('selected'));
+    selectedRpe = 0;
+    document.getElementById('ql-tss-preview').textContent = '';
+  });
+})();
+
+function renderQuickLogHistory() {
+  const el = document.getElementById('ql-history');
+  if (!el || !D) { if (el) el.innerHTML = '<p style="color:var(--text-faint);font-size:13px">No quick-logged activities yet.</p>'; return; }
+  const all = [...(D.runs || []), ...(D.rides || []), ...(D.swims || [])];
+  // We need to check IndexedDB for _source flag since enriched data doesn't carry it
+  dbGetAll().then(acts => {
+    const qlIds = new Set(acts.filter(a => a._source === 'quicklog').map(a => a.activityId));
+    if (!qlIds.size) { el.innerHTML = '<p style="color:var(--text-faint);font-size:13px">No quick-logged activities yet.</p>'; return; }
+    const qlActs = acts.filter(a => a._source === 'quicklog').sort((a, b) => (b.startTimeLocal || '').localeCompare(a.startTimeLocal || ''));
+    let html = '<table><thead><tr><th>Date</th><th>Name</th><th>Sport</th><th>Duration</th><th>TSS</th><th></th></tr></thead><tbody>';
+    for (const a of qlActs) {
+      const date = (a.startTimeLocal || '').slice(0, 10);
+      const sport = (a.activityType || {}).typeKey || '';
+      const dur = a.duration || 0;
+      const mins = Math.round(dur / 60);
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      const durStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+      const tss = calcTSS(a, getOverrides().lthrRun || 165, getOverrides().lthrBike || 160, getOverrides().ftp || 0);
+      html += `<tr><td>${date}</td><td>${a.activityName || ''}</td><td>${sport.replace(/_/g, ' ')}</td><td>${durStr}</td><td>${tss}</td>`;
+      html += `<td class="delete-ql" data-id="${a.activityId}" title="Delete">&#x2715;</td></tr>`;
+    }
+    html += '</tbody></table>';
+    el.innerHTML = html;
+    el.querySelectorAll('.delete-ql').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        await dbDelete(id);
+        D = computeAll(await dbGetAll(), getOverrides());
+        renderAll();
+        renderQuickLogHistory();
+      });
+    });
+  });
 }
 
 // ═══════════════════════════════════════
