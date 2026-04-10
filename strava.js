@@ -505,6 +505,309 @@ function detectAndMapActivities(rawArray) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+//  File Import Parsers (GPX, TCX, FIT)
+// ═══════════════════════════════════════════════════════════════════
+
+const FIT_SPORT_MAP = {
+  0: 'other', 1: 'running', 2: 'road_biking', 3: 'other', 4: 'other',
+  5: 'lap_swimming', 6: 'other', 7: 'hiking', 8: 'cross_country_skiing',
+  9: 'resort_skiing', 10: 'other', 11: 'walking', 12: 'other',
+  13: 'hiking', 15: 'other', 17: 'road_biking', 18: 'mountain_biking',
+  19: 'gravel_cycling', 23: 'rowing', 24: 'snowboarding',
+  29: 'trail_running', 37: 'paddleboarding', 53: 'yoga',
+};
+
+function parseGPX(xmlText) {
+  const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+  const ns = doc.documentElement.namespaceURI;
+  const sel = (parent, tag) => Array.from(parent.getElementsByTagNameNS(ns, tag));
+
+  const trks = sel(doc, 'trk');
+  if (!trks.length) throw new Error('No tracks found in GPX file');
+
+  const activities = [];
+  for (const trk of trks) {
+    const nameEl = sel(trk, 'name')[0];
+    const typeEl = sel(trk, 'type')[0];
+    const trkpts = sel(trk, 'trkpt');
+    if (!trkpts.length) continue;
+
+    // Collect timestamps, positions, elevations, HR
+    const points = [];
+    const hrNS = 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1';
+    for (const pt of trkpts) {
+      const lat = parseFloat(pt.getAttribute('lat'));
+      const lon = parseFloat(pt.getAttribute('lon'));
+      const eleEl = sel(pt, 'ele')[0];
+      const timeEl = sel(pt, 'time')[0];
+      const hrEls = pt.getElementsByTagNameNS(hrNS, 'hr');
+      points.push({
+        lat, lon,
+        ele: eleEl ? parseFloat(eleEl.textContent) : null,
+        time: timeEl ? new Date(timeEl.textContent) : null,
+        hr: hrEls.length ? parseInt(hrEls[0].textContent) : null,
+      });
+    }
+
+    // Calculate metrics from trackpoints
+    let totalDist = 0;
+    let totalAscent = 0;
+    for (let i = 1; i < points.length; i++) {
+      totalDist += haversine(points[i - 1].lat, points[i - 1].lon, points[i].lat, points[i].lon);
+      if (points[i].ele != null && points[i - 1].ele != null) {
+        const diff = points[i].ele - points[i - 1].ele;
+        if (diff > 0) totalAscent += diff;
+      }
+    }
+
+    const hrs = points.map(p => p.hr).filter(h => h > 0);
+    const startTime = points[0].time;
+    const endTime = points[points.length - 1].time;
+    const durationSec = startTime && endTime ? (endTime - startTime) / 1000 : 0;
+
+    const typeText = (typeEl ? typeEl.textContent : '').toLowerCase();
+    let typeKey = 'other';
+    if (typeText.includes('run')) typeKey = 'running';
+    else if (typeText.includes('ride') || typeText.includes('cycl') || typeText.includes('bik')) typeKey = 'road_biking';
+    else if (typeText.includes('hik')) typeKey = 'hiking';
+    else if (typeText.includes('walk')) typeKey = 'walking';
+    else if (typeText.includes('swim')) typeKey = 'lap_swimming';
+
+    const dateStr = startTime ? startTime.toISOString().replace('T', ' ').slice(0, 19) : '';
+
+    activities.push({
+      activityId: 'gpx_' + (startTime ? startTime.getTime() : Date.now()) + '_' + activities.length,
+      activityName: nameEl ? nameEl.textContent : 'GPX Activity',
+      activityType: { typeKey },
+      startTimeLocal: dateStr,
+      duration: durationSec,
+      movingDuration: durationSec,
+      distance: totalDist,
+      averageHR: hrs.length ? Math.round(hrs.reduce((a, b) => a + b, 0) / hrs.length) : 0,
+      maxHR: hrs.length ? Math.max(...hrs) : 0,
+      averageSpeed: durationSec > 0 ? totalDist / durationSec : 0,
+      elevationGain: totalAscent,
+      _source: 'import',
+    });
+  }
+
+  if (!activities.length) throw new Error('No trackpoints found in GPX file');
+  return activities;
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function parseTCX(xmlText) {
+  const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+  const ns = doc.documentElement.namespaceURI || 'http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2';
+  const sel = (parent, tag) => Array.from(parent.getElementsByTagNameNS(ns, tag));
+
+  const tcxActivities = sel(doc, 'Activity');
+  if (!tcxActivities.length) throw new Error('No activities found in TCX file');
+
+  const activities = [];
+  for (const act of tcxActivities) {
+    const sport = act.getAttribute('Sport') || '';
+    let typeKey = 'other';
+    if (sport.toLowerCase().includes('run')) typeKey = 'running';
+    else if (sport.toLowerCase().includes('bik') || sport.toLowerCase().includes('cycl')) typeKey = 'road_biking';
+    else if (sport.toLowerCase().includes('swim')) typeKey = 'lap_swimming';
+    else if (sport.toLowerCase().includes('hik')) typeKey = 'hiking';
+
+    const laps = sel(act, 'Lap');
+    let totalTime = 0, totalDist = 0, totalAscent = 0, calories = 0;
+    const allHRs = [];
+    let startTime = null;
+    let prevEle = null;
+
+    for (const lap of laps) {
+      const timeEl = sel(lap, 'TotalTimeSeconds')[0];
+      const distEl = sel(lap, 'DistanceMeters')[0];
+      const calEl = sel(lap, 'Calories')[0];
+      if (timeEl) totalTime += parseFloat(timeEl.textContent);
+      if (distEl) totalDist += parseFloat(distEl.textContent);
+      if (calEl) calories += parseInt(calEl.textContent);
+
+      // Get start time from first lap
+      if (!startTime) {
+        const startAttr = lap.getAttribute('StartTime');
+        if (startAttr) startTime = new Date(startAttr);
+      }
+
+      // Trackpoints for HR and elevation
+      const trkpts = sel(lap, 'Trackpoint');
+      for (const pt of trkpts) {
+        const hrBpm = sel(pt, 'HeartRateBpm')[0];
+        if (hrBpm) {
+          const valEl = sel(hrBpm, 'Value')[0];
+          if (valEl) allHRs.push(parseInt(valEl.textContent));
+        }
+        const eleEl = sel(pt, 'AltitudeMeters')[0];
+        if (eleEl) {
+          const ele = parseFloat(eleEl.textContent);
+          if (prevEle != null && ele > prevEle) totalAscent += ele - prevEle;
+          prevEle = ele;
+        }
+      }
+    }
+
+    const dateStr = startTime ? startTime.toISOString().replace('T', ' ').slice(0, 19) : '';
+
+    activities.push({
+      activityId: 'tcx_' + (startTime ? startTime.getTime() : Date.now()) + '_' + activities.length,
+      activityName: sport || 'TCX Activity',
+      activityType: { typeKey },
+      startTimeLocal: dateStr,
+      duration: totalTime,
+      movingDuration: totalTime,
+      distance: totalDist,
+      averageHR: allHRs.length ? Math.round(allHRs.reduce((a, b) => a + b, 0) / allHRs.length) : 0,
+      maxHR: allHRs.length ? Math.max(...allHRs) : 0,
+      averageSpeed: totalTime > 0 ? totalDist / totalTime : 0,
+      calories,
+      elevationGain: totalAscent,
+      _source: 'import',
+    });
+  }
+
+  if (!activities.length) throw new Error('No activity data found in TCX file');
+  return activities;
+}
+
+function parseFIT(arrayBuffer) {
+  const dv = new DataView(arrayBuffer);
+  const headerSize = dv.getUint8(0);
+  if (headerSize < 12) throw new Error('Invalid FIT file header');
+
+  // Verify ".FIT" signature
+  const sig = String.fromCharCode(dv.getUint8(8), dv.getUint8(9), dv.getUint8(10), dv.getUint8(11));
+  if (sig !== '.FIT') throw new Error('Not a valid FIT file');
+
+  const dataSize = dv.getUint32(4, true);
+  const dataEnd = headerSize + dataSize;
+  const GARMIN_EPOCH = 631065600; // seconds between Unix epoch and Garmin epoch (1989-12-31)
+
+  // Local message definitions (keyed by local message type 0-15)
+  const defs = {};
+  // Collected session data
+  let session = null;
+  let offset = headerSize;
+
+  while (offset < dataEnd) {
+    const recordHeader = dv.getUint8(offset);
+    offset++;
+
+    // Compressed timestamp header
+    if (recordHeader & 0x80) {
+      const localType = (recordHeader >> 5) & 0x03;
+      const def = defs[localType];
+      if (!def) { offset += 1; continue; } // skip unknown
+      let size = 0;
+      for (const f of def.fields) size += f.size;
+      offset += size;
+      continue;
+    }
+
+    const isDefinition = (recordHeader & 0x40) !== 0;
+    const localType = recordHeader & 0x0F;
+
+    if (isDefinition) {
+      offset++; // reserved
+      const arch = dv.getUint8(offset); offset++; // architecture: 0=little, 1=big
+      const littleEndian = arch === 0;
+      const globalMsgNum = littleEndian ? dv.getUint16(offset, true) : dv.getUint16(offset, false);
+      offset += 2;
+      const numFields = dv.getUint8(offset); offset++;
+      const fields = [];
+      for (let i = 0; i < numFields; i++) {
+        const fieldDefNum = dv.getUint8(offset); offset++;
+        const size = dv.getUint8(offset); offset++;
+        const baseType = dv.getUint8(offset); offset++;
+        fields.push({ fieldDefNum, size, baseType });
+      }
+      // Developer fields (if bit 5 set)
+      if (recordHeader & 0x20) {
+        const numDevFields = dv.getUint8(offset); offset++;
+        for (let i = 0; i < numDevFields; i++) {
+          offset++; // devFieldNum
+          const size = dv.getUint8(offset); offset++;
+          offset++; // devDataIdx
+          fields.push({ fieldDefNum: -1, size, baseType: 0, isDev: true });
+        }
+      }
+      defs[localType] = { globalMsgNum, fields, littleEndian };
+    } else {
+      // Data message
+      const def = defs[localType];
+      if (!def) { break; } // Can't proceed without definition
+
+      const fieldValues = {};
+      for (const f of def.fields) {
+        if (f.isDev) { offset += f.size; continue; }
+        let val = null;
+        if (offset + f.size > arrayBuffer.byteLength) break;
+        if (f.size === 1) {
+          val = dv.getUint8(offset);
+        } else if (f.size === 2) {
+          val = dv.getUint16(offset, def.littleEndian);
+        } else if (f.size === 4) {
+          val = dv.getUint32(offset, def.littleEndian);
+        }
+        offset += f.size;
+        fieldValues[f.fieldDefNum] = val;
+      }
+
+      // Global message 18 = session
+      if (def.globalMsgNum === 18) {
+        session = fieldValues;
+      }
+    }
+  }
+
+  if (!session) throw new Error('No session data found in FIT file');
+
+  const timestamp = session[253]; // seconds since Garmin epoch
+  const startDate = timestamp ? new Date((timestamp + GARMIN_EPOCH) * 1000) : new Date();
+  const totalElapsed = session[7] ? session[7] / 1000 : 0; // scaled by 1000
+  const totalTimer = session[8] ? session[8] / 1000 : 0;
+  const totalDist = session[9] ? session[9] / 100 : 0; // scaled by 100
+  const avgHR = session[16] || 0;
+  const maxHR = session[17] || 0;
+  const avgSpeed = session[14] ? session[14] / 1000 : (totalTimer > 0 ? totalDist / totalTimer : 0);
+  const avgPower = session[20] || 0;
+  const totalAscent = session[22] || 0;
+  const sportNum = session[5] || 0;
+  const calories = session[11] || 0;
+
+  const typeKey = FIT_SPORT_MAP[sportNum] || 'other';
+  const dateStr = startDate.toISOString().replace('T', ' ').slice(0, 19);
+
+  return [{
+    activityId: 'fit_' + startDate.getTime(),
+    activityName: typeKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+    activityType: { typeKey },
+    startTimeLocal: dateStr,
+    duration: totalElapsed || totalTimer,
+    movingDuration: totalTimer,
+    distance: totalDist,
+    averageHR: avgHR === 0xFF ? 0 : avgHR,
+    maxHR: maxHR === 0xFF ? 0 : maxHR,
+    averageSpeed: avgSpeed,
+    avgPower: avgPower === 0xFFFF ? 0 : avgPower,
+    calories: calories === 0xFFFF ? 0 : calories,
+    elevationGain: totalAscent === 0xFFFF ? 0 : totalAscent,
+    _source: 'import',
+  }];
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  Sync Orchestration
 // ═══════════════════════════════════════════════════════════════════
 
@@ -540,24 +843,43 @@ async function syncFromStrava(fullSync = false, onPowerProgress) {
 }
 
 async function loadFromImport(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const raw = JSON.parse(e.target.result);
-        const acts = detectAndMapActivities(raw);
-        await dbClear();
-        await dbPutAll(acts);
-        setDataSource('import');
-        setLastSync();
-        resolve(acts);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(file);
-  });
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if (ext === 'fit') {
+    const buf = await file.arrayBuffer();
+    const acts = parseFIT(buf);
+    await dbPutAll(acts);
+    setDataSource('import');
+    setLastSync();
+    return (await dbGetAll());
+  }
+
+  const text = await file.text();
+
+  if (ext === 'gpx') {
+    const acts = parseGPX(text);
+    await dbPutAll(acts);
+    setDataSource('import');
+    setLastSync();
+    return (await dbGetAll());
+  }
+
+  if (ext === 'tcx') {
+    const acts = parseTCX(text);
+    await dbPutAll(acts);
+    setDataSource('import');
+    setLastSync();
+    return (await dbGetAll());
+  }
+
+  // JSON (bulk import — replaces all data)
+  const raw = JSON.parse(text);
+  const acts = detectAndMapActivities(raw);
+  await dbClear();
+  await dbPutAll(acts);
+  setDataSource('import');
+  setLastSync();
+  return acts;
 }
 
 async function getStoredActivities() {

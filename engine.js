@@ -128,7 +128,8 @@ function estimateCSS(acts) {
 
 // ── RPE-based TSS ───────────────────────────────────────────────
 
-const RPE_TO_IF = [0, 0.50, 0.55, 0.60, 0.65, 0.72, 0.80, 0.88, 0.95, 1.03, 1.10];
+// IF values calibrated so RPE-based TSS ≈ HR-based TSS: IF = (HR/LTHR)^1.75
+const RPE_TO_IF = [0, 0.50, 0.56, 0.63, 0.74, 0.80, 0.87, 0.93, 0.99, 1.05, 1.12];
 
 function calcRpeTSS(durationSec, rpe) {
   if (!durationSec || durationSec <= 0 || !rpe || rpe < 1 || rpe > 10) return 0;
