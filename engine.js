@@ -272,6 +272,26 @@ function buildPowerCurve(acts) {
   return best;
 }
 
+// ── Grade Adjusted Pace ─────────────────────────────────────────
+// If per-second stream data has been synced, uses Minetti-based grade-adjusted
+// distance (computed in strava.js). Otherwise falls back to a whole-run
+// estimate using elevation gain with a net factor of 3.7.
+
+function calcGAP(durationSec, distM, elevGain, gapAdjustedDist) {
+  if (!durationSec || !distM || distM < 100) return null;
+  // Prefer stream-based grade-adjusted distance when available
+  if (gapAdjustedDist && gapAdjustedDist > 0) {
+    const gapDistMi = gapAdjustedDist / 1609.344;
+    return Math.round(durationSec / gapDistMi);
+  }
+  // Fallback: whole-run estimate from total elevation gain
+  const gain = elevGain || 0;
+  const pace_mi = Math.round(durationSec / (distM / 1609.344));
+  if (gain <= 0) return pace_mi;
+  const equivDist = distM + gain * 3.7;
+  return Math.round(pace_mi * distM / equivDist);
+}
+
 // ── Enriched activity lists ──────────────────────────────────────
 
 function enrichRuns(acts, lthrRun, lthrBike, ftp) {
@@ -281,18 +301,22 @@ function enrichRuns(acts, lthrRun, lthrBike, ftp) {
     if (!RUN_TYPES.includes(atype)) continue;
     const speed = a.averageSpeed || 0;
     const distM = a.distance || 0;
+    const dur = a.duration || 0;
+    const pace_mi = speed > 0 ? Math.round(1609.344 / speed) : null;
+    const elevGain = a.elevationGain || 0;
     runs.push({
       date: (a.startTimeLocal || '').slice(0, 10),
       name: a.activityName || '',
       type: atype,
-      duration: Math.round((a.duration || 0) / 60 * 10) / 10,
+      duration: Math.round(dur / 60 * 10) / 10,
       distance_mi: distM ? Math.round(distM / 1609.344 * 100) / 100 : 0,
-      pace_mi: speed > 0 ? Math.round(1609.344 / speed) : null,
+      pace_mi,
+      gap_mi: calcGAP(dur, distM, elevGain, a._gapAdjustedDist),
       avgHR: a.averageHR || null,
       maxHR: a.maxHR || null,
       cadence: a.averageRunningCadenceInStepsPerMinute || null,
       tss: calcTSS(a, lthrRun, lthrBike, ftp),
-      elevGain: a.elevationGain || null,
+      elevGain,
       vo2max: a.vO2MaxValue || null,
     });
   }

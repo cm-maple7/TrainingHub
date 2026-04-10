@@ -234,6 +234,93 @@ function computeBestPowers(watts) {
   return result;
 }
 
+// Fetch altitude+distance streams for a single run, returns {altitude, distance} or null
+async function stravaFetchRunStreams(accessToken, activityId) {
+  const url = `https://www.strava.com/api/v3/activities/${activityId}/streams?keys=altitude,distance&key_by_type=true`;
+  const resp = await fetch(url, {
+    headers: { 'Authorization': 'Bearer ' + accessToken },
+  });
+  if (resp.status === 429) return 'RATE_LIMITED';
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  const alt = data.altitude && data.altitude.data;
+  const dist = data.distance && data.distance.data;
+  if (alt && dist && alt.length === dist.length) return { altitude: alt, distance: dist };
+  return null;
+}
+
+// Compute grade-adjusted distance from altitude + distance streams.
+// Uses Minetti (2002) cost-of-running polynomial: Cr(g) = 155.4g^5 - 30.4g^4 - 43.3g^3 + 46.3g^2 + 19.5g + 3.6
+// GAP = actual_time / (grade_adjusted_distance / 1609.344) converted to sec/mi.
+function computeGradeAdjustedDistance(altitude, distance) {
+  const crFlat = 3.6; // Cr(0) = 3.6
+  let adjDist = 0;
+  for (let i = 1; i < distance.length; i++) {
+    const dx = distance[i] - distance[i - 1];
+    if (dx <= 0) continue;
+    const dy = altitude[i] - altitude[i - 1];
+    const g = dy / dx; // grade as decimal
+    const gClamped = Math.max(-0.5, Math.min(0.5, g)); // clamp extreme values
+    const g2 = gClamped * gClamped;
+    const g3 = g2 * gClamped;
+    const g4 = g3 * gClamped;
+    const g5 = g4 * gClamped;
+    const cr = 155.4 * g5 - 30.4 * g4 - 43.3 * g3 + 46.3 * g2 + 19.5 * gClamped + 3.6;
+    const factor = cr / crFlat;
+    adjDist += dx * factor;
+  }
+  return adjDist;
+}
+
+const RUN_TYPE_KEYS = ['running', 'trail_running', 'treadmill_running'];
+
+// Fetch altitude/distance streams for all runs that don't have GAP data yet.
+async function syncRunStreams(accessToken, activities, onProgress) {
+  const statusEl = document.getElementById('sync-status');
+  const runs = activities.filter(a => {
+    const atype = (a.activityType || {}).typeKey || '';
+    if (!RUN_TYPE_KEYS.includes(atype)) return false;
+    if (!(a.distance > 0)) return false;
+    return !a._gapSynced;
+  });
+
+  if (!runs.length) {
+    if (statusEl) statusEl.textContent = '';
+    return;
+  }
+
+  const total = runs.length;
+  let done = 0;
+
+  for (const run of runs) {
+    done++;
+    if (statusEl) statusEl.textContent = `Fetching run streams: ${done}/${total}...`;
+
+    const streams = await stravaFetchRunStreams(accessToken, run.activityId);
+
+    if (streams === 'RATE_LIMITED') {
+      if (statusEl) statusEl.textContent = `Rate limited — waiting 60s (${done}/${total})...`;
+      await new Promise(r => setTimeout(r, 60000));
+      const retry = await stravaFetchRunStreams(accessToken, run.activityId);
+      if (retry && retry !== 'RATE_LIMITED') {
+        const adjDist = computeGradeAdjustedDistance(retry.altitude, retry.distance);
+        run._gapAdjustedDist = Math.round(adjDist * 100) / 100;
+      }
+    } else if (streams) {
+      const adjDist = computeGradeAdjustedDistance(streams.altitude, streams.distance);
+      run._gapAdjustedDist = Math.round(adjDist * 100) / 100;
+    }
+
+    run._gapSynced = true;
+    await dbPutAll([run]);
+    if (onProgress) onProgress(run, done, total);
+
+    if (done < total) await new Promise(r => setTimeout(r, 700));
+  }
+
+  if (statusEl) statusEl.textContent = '';
+}
+
 // Fetch power stream for a single activity, returns watts array or null
 async function stravaFetchPowerStream(accessToken, activityId) {
   const url = `https://www.strava.com/api/v3/activities/${activityId}/streams?keys=watts&key_by_type=true`;
@@ -259,7 +346,7 @@ async function syncPowerStreams(accessToken, activities, onProgress) {
     const atype = (a.activityType || {}).typeKey || '';
     if (!BIKE_TYPE_KEYS.includes(atype)) return false;
     if (!(a.normPower > 0 || a.avgPower > 0)) return false;
-    return !a._powerSynced || !a.maxAvgPower_2;
+    return !a._powerSynced;
   });
 
   if (!bikeRides.length) {
@@ -384,6 +471,8 @@ function mapStravaActivity(sa) {
     normPower: sa.weighted_average_watts || 0,
     calories: sa.calories || 0,
     elevationGain: sa.total_elevation_gain || 0,
+    elevHigh: sa.elev_high || null,
+    elevLow: sa.elev_low || null,
     // Not available from Strava summary:
     // max20MinPower, maxAvgPower_X, vO2MaxValue, averageRunningCadenceInStepsPerMinute
   };
@@ -429,6 +518,10 @@ async function syncFromStrava(fullSync = false, onPowerProgress) {
   // Fetch power streams for bike rides that don't have power curve data
   const allActs = await dbGetAll();
   await syncPowerStreams(accessToken, allActs, onPowerProgress);
+
+  // Fetch altitude/distance streams for runs that don't have GAP data
+  const allAfterPower = await dbGetAll();
+  await syncRunStreams(accessToken, allAfterPower);
 
   setDataSource('strava');
   setLastSync();

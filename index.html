@@ -6,8 +6,8 @@
 <title>TrainingHub</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-<script src="engine.js"></script>
-<script src="strava.js"></script>
+<script src="engine.js?v=7"></script>
+<script src="strava.js?v=3"></script>
 <style>
 :root, [data-theme="dark"] {
   --bg: #111318;
@@ -566,7 +566,7 @@ tr:hover td { background: var(--bg-hover); }
   <div class="grid">
     <div class="card">
       <div class="card-title-row">
-        <h3>Pace Trend</h3>
+        <h3>Grade Adjusted Pace Trend</h3>
         <div class="range-toggle" id="run-range-toggle">
           <button class="range-btn" data-range="12w">12 weeks</button>
           <button class="range-btn" data-range="6m">6 months</button>
@@ -620,34 +620,210 @@ tr:hover td { background: var(--bg-hover); }
 <!-- LEARN -->
 <div id="learn" class="page">
   <h1 class="page-title">Learn</h1>
-  <p class="page-desc">Understand the science behind your training data.</p>
+  <p class="page-desc">Understand the science behind your training data. These concepts power everything you see on the dashboard, sport pages, and zone tables.</p>
+
   <div class="learn-content">
+
     <div class="card learn-card">
       <div class="card-label">Fitness, Fatigue & Form (TSB Model)</div>
-      <p>TSS (Training Stress Score) quantifies how hard a workout was. A score of 100 = one hour at threshold. The PMC tracks three derived metrics:</p>
-      <div class="learn-sub"><h4>CTL -- Chronic Training Load (Fitness)</h4><p>42-day exponential average of daily TSS. Grows slowly with consistency.</p></div>
-      <div class="learn-sub"><h4>ATL -- Acute Training Load (Fatigue)</h4><p>7-day exponential average. Reacts fast to recent training.</p></div>
-      <div class="learn-sub"><h4>TSB -- Training Stress Balance (Form)</h4>
-        <div class="learn-formula">TSB = CTL - ATL</div>
-        <table class="learn-table"><thead><tr><th>TSB</th><th>Zone</th><th>Meaning</th></tr></thead><tbody>
-          <tr><td style="color:var(--yellow)">&gt;25</td><td>Transition</td><td>Very rested, possible detraining</td></tr>
-          <tr><td style="color:var(--blue)">5 to 25</td><td>Fresh</td><td>Well-recovered, ready to perform</td></tr>
-          <tr><td style="color:var(--text-dim)">-10 to 5</td><td>Grey Zone</td><td>Balanced, normal training state</td></tr>
-          <tr><td style="color:var(--green)">-30 to -10</td><td>Optimal</td><td>Productive overreach, fitness gains</td></tr>
-          <tr><td style="color:var(--red)">&lt;-30</td><td>High Risk</td><td>Deep fatigue, back off</td></tr>
-        </tbody></table>
+      <p>TSS (Training Stress Score) quantifies how hard a workout was in a single number. A score of 100 represents one hour at your threshold intensity — the hardest effort you could sustain for about an hour. An easy 30-minute jog might score 25; an all-out 90-minute race could score 200+.</p>
+      <p>The Performance Management Chart (PMC) is the core of the dashboard. It tracks three metrics derived from your daily TSS — together, they tell the story of your training.</p>
+
+      <div class="learn-sub">
+        <h4>CTL — Chronic Training Load (Fitness)</h4>
+        <p>A rolling 42-day exponentially weighted average of your daily TSS. Think of it as your <strong>training bank account</strong> — it grows slowly as you train consistently, and decays slowly when you stop.</p>
+        <ul>
+          <li>Takes weeks to build — there are no shortcuts</li>
+          <li>Higher CTL = greater capacity to handle training load</li>
+          <li>A CTL of 50 means you've been averaging roughly 50 TSS/day over the past ~6 weeks</li>
+          <li>Rate of change matters: building CTL faster than ~5-7 points/week increases injury risk</li>
+        </ul>
+      </div>
+
+      <div class="learn-sub">
+        <h4>ATL — Acute Training Load (Fatigue)</h4>
+        <p>A rolling 7-day exponentially weighted average of your daily TSS. This reacts fast — it spikes after hard days and drops after rest days. It represents the <strong>fatigue you're carrying right now</strong>.</p>
+        <ul>
+          <li>Rises quickly after hard training blocks</li>
+          <li>Drops quickly with rest (that's why tapers work)</li>
+          <li>ATL much higher than CTL means you're reaching beyond your current fitness — unsustainable long-term</li>
+        </ul>
+      </div>
+
+      <div class="learn-sub">
+        <h4>TSB — Training Stress Balance (Form)</h4>
+        <div class="learn-formula">TSB = CTL (yesterday) − ATL (yesterday)</div>
+        <p>The balance between your fitness and fatigue. This is the number in the <strong>Form ring</strong> on the dashboard — it tells you how ready you are to perform <em>today</em>.</p>
+        <table class="learn-table">
+          <thead><tr><th>TSB</th><th>Zone</th><th>What It Means</th></tr></thead>
+          <tbody>
+            <tr><td style="color:var(--yellow)">&gt;25</td><td>Transition</td><td>Very rested — possible detraining if prolonged. Great for race day after a taper.</td></tr>
+            <tr><td style="color:var(--blue)">5 to 25</td><td>Fresh</td><td>Well-recovered and ready to perform. Ideal for racing or hard quality sessions.</td></tr>
+            <tr><td style="color:var(--text-dim)">−10 to 5</td><td>Grey Zone</td><td>Balanced — neutral readiness. Normal day-to-day training state.</td></tr>
+            <tr><td style="color:var(--green)">−30 to −10</td><td>Optimal</td><td>Productive overreach. Fatigued but adapting — this is where fitness gains happen.</td></tr>
+            <tr><td style="color:var(--red)">&lt;−30</td><td>High Risk</td><td>Deep fatigue. Risk of illness, injury, or overtraining. Back off and recover.</td></tr>
+          </tbody>
+        </table>
+        <p>The key insight: <strong>you can't be both fit and fresh at the same time.</strong> Building fitness requires fatigue (negative TSB). Racing well requires freshness (positive TSB). Periodization — alternating build and recovery phases — is how you manage this tradeoff.</p>
+      </div>
+
+      <div class="learn-sub">
+        <h4>Projected Values</h4>
+        <p>The dashed lines on the dashboard project your fitness, fatigue, and form 7 days forward assuming no additional training. This helps you see where your numbers are heading if you rest, and plan accordingly.</p>
       </div>
     </div>
+
     <div class="card learn-card">
-      <div class="card-label">Training Stress Score (TSS)</div>
-      <div class="learn-sub"><h4>Cycling -- Power TSS</h4><div class="learn-formula">TSS = (duration x NP x IF) / (FTP x 3600) x 100</div></div>
-      <div class="learn-sub"><h4>Running -- hrTSS</h4><div class="learn-formula">hrTSS = (duration x HR_avg x IF) / (LTHR x 3600) x 100</div></div>
-      <div class="learn-sub"><h4>Swimming -- sTSS</h4><div class="learn-formula">sTSS = (duration x IF^2) / 3600 x 100</div></div>
+      <div class="card-label">Training Stress Score (TSS) — How It's Calculated</div>
+      <p>TSS is calculated differently for each sport, but the principle is the same: <strong>how hard did you go, relative to your threshold, and for how long?</strong></p>
+
+      <div class="learn-sub">
+        <h4>Cycling — Power-Based TSS</h4>
+        <p>Cycling TSS uses power meter data and your FTP (Functional Threshold Power):</p>
+        <div class="learn-formula">TSS = (duration × NP × IF) / (FTP × 3600) × 100</div>
+        <ul>
+          <li><strong>NP (Normalized Power)</strong> — a weighted average that accounts for the extra cost of intensity spikes. Riding 200W steady and alternating 100W/300W produce the same average, but the variable effort is harder on your body — NP captures that.</li>
+          <li><strong>IF (Intensity Factor)</strong> — NP ÷ FTP. An IF of 1.0 means you rode at threshold. Above 1.0 is a race-level effort.</li>
+          <li><strong>FTP</strong> — Functional Threshold Power. The highest power you could sustain for roughly one hour. Your current setting: shown in Cycling and Settings.</li>
+        </ul>
+      </div>
+
+      <div class="learn-sub">
+        <h4>Running — Heart Rate TSS (hrTSS)</h4>
+        <p>Without a running power meter, TrainingHub estimates stress from heart rate data and your LTHR (Lactate Threshold Heart Rate):</p>
+        <div class="learn-formula">hrTSS = (duration × HR_avg × IF) / (LTHR × 3600) × 100</div>
+        <ul>
+          <li><strong>LTHR</strong> — Lactate Threshold Heart Rate. The heart rate at your sustainable threshold effort (~60 min race pace). Your running and cycling LTHRs are different because of body position and muscle recruitment.</li>
+          <li><strong>IF</strong> — average HR ÷ LTHR. An easy Zone 2 run might have an IF of 0.75; a tempo run around 0.90.</li>
+        </ul>
+        <p>Heart rate-based TSS is less precise than power-based TSS because HR responds slowly to effort changes and is affected by heat, caffeine, fatigue, and drift. But over time, it's reliable enough for trend analysis.</p>
+      </div>
+
+      <div class="learn-sub">
+        <h4>Swimming — Pace-Based TSS (sTSS)</h4>
+        <p>Swimming TSS uses pace relative to your CSS (Critical Swim Speed) — the swimming equivalent of threshold:</p>
+        <div class="learn-formula">sTSS = (duration × IF²) / 3600 × 100</div>
+        <ul>
+          <li><strong>CSS (Critical Swim Speed)</strong> — the pace you could hold for about 30 minutes of continuous swimming. Calculated from your recent best efforts.</li>
+          <li><strong>IF</strong> — your pace relative to CSS, where faster = higher IF (unlike running, where speed and pace are inversely related, the IF calculation handles this).</li>
+        </ul>
+      </div>
+
+      <div class="learn-sub">
+        <h4>What TSS Numbers Mean</h4>
+        <table class="learn-table">
+          <thead><tr><th>TSS</th><th>Effort</th><th>Recovery</th></tr></thead>
+          <tbody>
+            <tr><td>&lt;150</td><td>Low–moderate</td><td>Recovered by next day</td></tr>
+            <tr><td>150–300</td><td>Moderate–hard</td><td>Some residual fatigue next day</td></tr>
+            <tr><td>300–450</td><td>Very hard</td><td>Fatigue lingers 2–3 days</td></tr>
+            <tr><td>&gt;450</td><td>Epic</td><td>May need 5+ days to fully recover</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+
+    <div class="card learn-card">
+      <div class="card-label">Heart Rate Variability (HRV)</div>
+      <p>HRV measures the variation in time between consecutive heartbeats, reported in milliseconds. It's controlled by your autonomic nervous system — the same system that manages stress, recovery, digestion, and sleep.</p>
+
+      <div class="learn-sub">
+        <h4>Why It Matters for Training</h4>
+        <p>A higher HRV generally indicates a well-recovered, adaptable nervous system. A lower HRV can signal accumulated fatigue, stress, poor sleep, illness onset, or insufficient recovery.</p>
+        <ul>
+          <li><strong>Within baseline</strong> — your body is handling current training load well. Train as planned.</li>
+          <li><strong>Above baseline</strong> — your body is well-recovered. Good day to push harder.</li>
+          <li><strong>Below baseline</strong> — something is stressing your system. Consider reducing intensity, prioritizing sleep, or taking a rest day.</li>
+        </ul>
+      </div>
+
+      <div class="learn-sub">
+        <h4>The Baseline Range</h4>
+        <p>HRV is highly individual — a "good" number for one person could be low for another. That's why TrainingHub shows your value relative to your <strong>personal baseline range</strong>, calculated from your Garmin data over time. The baseline adapts as your fitness changes.</p>
+        <p>Don't overreact to a single day. HRV is noisy — one low reading after a hard workout is normal. Watch for <strong>trends over 3-5 days</strong>. Consistently below baseline is a real signal worth acting on.</p>
+      </div>
+    </div>
+
     <div class="card learn-card">
       <div class="card-label">Training Zones</div>
-      <p>Zones divide effort into intensity bands. HR zones use Friel's 7-zone model (% LTHR). Power zones use Coggan's model (% FTP). Swim zones use CSS.</p>
+      <p>Zones divide your effort range into distinct intensity bands, each targeting different physiological systems. Training in the right zone ensures the workout achieves its intended purpose.</p>
+
+      <div class="learn-sub">
+        <h4>Heart Rate Zones (Friel 7-Zone Model)</h4>
+        <p>Used for running and cycling. Based on your LTHR — the heart rate at your lactate threshold. Each zone is a percentage range of LTHR:</p>
+        <table class="learn-table">
+          <thead><tr><th>Zone</th><th>Name</th><th>% LTHR</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Recovery</td><td>&lt;85%</td><td>Active recovery, warmup/cooldown</td></tr>
+            <tr><td>2</td><td>Aerobic</td><td>85–89%</td><td>Base endurance, fat burning, aerobic development</td></tr>
+            <tr><td>3</td><td>Tempo</td><td>90–94%</td><td>Moderate endurance, "comfortably hard"</td></tr>
+            <tr><td>4</td><td>Sub-Threshold</td><td>95–99%</td><td>Sustained hard effort, lactate clearance</td></tr>
+            <tr><td>5a</td><td>Super-Threshold</td><td>100–102%</td><td>Threshold work, time trial intensity</td></tr>
+            <tr><td>5b</td><td>Aerobic Capacity</td><td>103–106%</td><td>VO2max intervals, high-intensity development</td></tr>
+            <tr><td>5c</td><td>Anaerobic</td><td>&gt;106%</td><td>Short, maximal efforts, sprint power</td></tr>
+          </tbody>
+        </table>
+        <p>Your running LTHR and cycling LTHR are different because of body position and muscle recruitment. Always use sport-specific thresholds.</p>
+      </div>
+
+      <div class="learn-sub">
+        <h4>Power Zones (Coggan Model)</h4>
+        <p>Used for cycling with a power meter. Based on your FTP — Functional Threshold Power:</p>
+        <table class="learn-table">
+          <thead><tr><th>Zone</th><th>Name</th><th>% FTP</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Active Recovery</td><td>&lt;55%</td><td>Easy spinning, recovery</td></tr>
+            <tr><td>2</td><td>Endurance</td><td>56–75%</td><td>Long rides, aerobic base</td></tr>
+            <tr><td>3</td><td>Tempo</td><td>76–90%</td><td>Sustained effort, "sweet spot" training</td></tr>
+            <tr><td>4</td><td>Threshold</td><td>91–105%</td><td>FTP intervals, race pace</td></tr>
+            <tr><td>5</td><td>VO2max</td><td>106–120%</td><td>High-intensity intervals (3-8 min)</td></tr>
+            <tr><td>6</td><td>Anaerobic</td><td>121–150%</td><td>Short power (30s-2min)</td></tr>
+            <tr><td>7</td><td>Neuromuscular</td><td>&gt;150%</td><td>Sprints, max power (&lt;30s)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="learn-sub">
+        <h4>Swimming Pace Zones (CSS-Based)</h4>
+        <p>Based on your Critical Swim Speed — the fastest pace you can hold for roughly 30 minutes. CSS zones help you train the right energy systems in the pool, from easy recovery laps to race-pace intervals.</p>
+      </div>
     </div>
+
+    <div class="card learn-card">
+      <div class="card-label">Power Curve</div>
+      <p>The power curve (on the Cycling page) plots your <strong>best power output at every duration</strong> across all rides in the selected time range. Each point answers: "What's the hardest I've ever gone for X seconds/minutes/hours?"</p>
+      <ul>
+        <li><strong>Left side (5s–30s)</strong> — neuromuscular power and sprint ability</li>
+        <li><strong>Middle (1min–8min)</strong> — anaerobic capacity and VO2max power</li>
+        <li><strong>Right side (20min–60min+)</strong> — threshold and endurance power (where FTP lives)</li>
+      </ul>
+      <p>The shape of your curve reveals your strengths. A steep left side with a big drop-off means you're a sprinter. A flat curve that holds up over time means you're a diesel — strong at sustained efforts. As your training progresses, watch the curve shift upward across all durations.</p>
+    </div>
+
+    <div class="card learn-card">
+      <div class="card-label">Key Thresholds</div>
+
+      <div class="learn-sub">
+        <h4>FTP — Functional Threshold Power</h4>
+        <p>The highest power (in watts) you can sustain for approximately one hour. It's the anchor for all cycling power zones and cycling TSS. TrainingHub estimates your FTP from your best 20-minute power efforts (multiplied by 0.95). You can override it in Settings if you've done a formal FTP test.</p>
+      </div>
+
+      <div class="learn-sub">
+        <h4>LTHR — Lactate Threshold Heart Rate</h4>
+        <p>The heart rate at your lactate threshold — the point where lactate accumulates faster than your body can clear it. Above this intensity, you "go anaerobic" and fatigue accumulates rapidly. TrainingHub calculates separate running and cycling LTHRs from your workout data.</p>
+      </div>
+
+      <div class="learn-sub">
+        <h4>CSS — Critical Swim Speed</h4>
+        <p>The swimming equivalent of threshold. Estimated from your best efforts at different distances. Swim at CSS pace and you can sustain it for an extended period; go above it and you'll fade quickly. All swim pace zones are based on this number.</p>
+      </div>
+
+      <div class="learn-sub">
+        <h4>W/kg — Watts Per Kilogram</h4>
+        <p>FTP divided by body weight. This normalizes cycling power across riders of different sizes. A 60kg rider at 240W and an 80kg rider at 320W both produce 4.0 W/kg — and they'll climb at similar speeds. W/kg is the best single metric for comparing cycling fitness.</p>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -868,8 +1044,7 @@ function hexToRgba(hex, opacity) {
 function lineStyle(colorVar, opts) {
   const c = css(colorVar);
   return { borderColor: c, borderWidth: 2.5, fill: false, pointRadius: 0,
-    pointHoverRadius: 4, pointHoverBackgroundColor: c,
-    pointHoverBorderColor: css('--bg-card'), pointHoverBorderWidth: 2,
+    pointHoverRadius: 0, pointHitRadius: 10,
     tension: 0.3, ...opts };
 }
 function projStyle(colorVar, opts) {
@@ -991,7 +1166,7 @@ function buildExternalTooltip(chart, tooltip) {
   if (!el) {
     el = document.createElement('div');
     el.className = 'custom-tooltip';
-    el.style.cssText = 'position:absolute;pointer-events:none;padding:6px 10px;border-radius:4px;font-size:12px;font-family:inherit;line-height:1.5;white-space:nowrap;background:var(--card);border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:10;opacity:0;transition:opacity .1s;';
+    el.style.cssText = 'position:absolute;pointer-events:none;padding:6px 10px;border-radius:4px;font-size:12px;font-family:inherit;line-height:1.5;white-space:nowrap;background:var(--bg-card);border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:10;opacity:0;transition:opacity .1s;';
     chart.canvas.parentNode.style.position = 'relative';
     chart.canvas.parentNode.appendChild(el);
   }
@@ -1002,12 +1177,14 @@ function buildExternalTooltip(chart, tooltip) {
   // Title
   let titleText = '';
   if (tooltip.title && tooltip.title.length) titleText = tooltip.title[0];
-  // Build lines from dataPoints
+  // Build lines from dataPoints, skipping projected duplicates on today
+  const hasActual = tooltip.dataPoints.some(dp => !(chart.data.datasets[dp.datasetIndex].label || '').toLowerCase().includes('projected'));
   let html = `<div style="font-weight:600;margin-bottom:2px">${titleText}</div>`;
   tooltip.dataPoints.forEach(dp => {
     const ds = chart.data.datasets[dp.datasetIndex];
-    const color = ds.borderColor && typeof ds.borderColor === 'string' ? ds.borderColor : ds.backgroundColor || '#fff';
     const label = ds.label || '';
+    if (hasActual && label.toLowerCase().includes('projected')) return;
+    const color = ds.borderColor && typeof ds.borderColor === 'string' ? ds.borderColor : ds._baseColor || ds.backgroundColor || '#fff';
     const valText = tooltip.labelTextColors ? (dp.formattedValue || dp.parsed.y) : dp.formattedValue;
     // Use custom label callback result if available
     const labelCb = chart.options.plugins.tooltip.callbacks && chart.options.plugins.tooltip.callbacks._formatLine;
@@ -1036,7 +1213,7 @@ function chartOpts(opts) {
     if (ts > 1e11) return new Date(ts).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
     return items[0].label || '';
   } };
-  const base = { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false } };
+  const base = { responsive: true, maintainAspectRatio: false, interaction: { mode: 'nearest', axis: 'x', intersect: false } };
   const merged = { ...base, ...opts };
   if (!merged.plugins) merged.plugins = {};
   if (!merged.plugins.tooltip) merged.plugins.tooltip = {};
@@ -1338,8 +1515,8 @@ function renderDashboard(S) {
   charts.form = new Chart(document.getElementById('formChart'),{
     type:'line', plugins:[formPlugin, crosshairPlugin],
     data:{datasets:[
-      {label:'Form (TSB)',data:allActual.map(d=>({x:d.date,y:d.tsb})), _useFormGrad:true, ...lineStyle('--color-form')},
-      {label:'Projected',data:projected.map(d=>({x:d.date,y:d.tsb})), _useFormGrad:true, ...projStyle('--color-form')},
+      {label:'Form (TSB)',data:allActual.map(d=>({x:d.date,y:d.tsb})), _useFormGrad:true, _baseColor:css('--color-form'), ...lineStyle('--color-form')},
+      {label:'Projected',data:projected.map(d=>({x:d.date,y:d.tsb})), _useFormGrad:true, _baseColor:css('--color-form'), ...projStyle('--color-form')},
     ]},
     options: chartOpts({
       scales:{
@@ -1394,10 +1571,10 @@ function renderRunning(S) {
     <div class="stat"><div class="value">${S.max_hr_run}</div><div class="label">Max HR</div></div>
     <div class="stat"><div class="value">${runs.length}</div><div class="label">Total Runs</div></div>`;
   document.getElementById('run-count-badge').textContent = `${Math.min(runs.length,50)} shown`;
-  let h = '<table><thead><tr><th>Date</th><th>Name</th><th>Dist</th><th>Pace</th><th>Avg HR</th><th>Max HR</th><th>TSS</th></tr></thead><tbody>';
+  let h = '<table><thead><tr><th>Date</th><th>Name</th><th>Dist</th><th>Pace</th><th>GAP</th><th>Avg HR</th><th>Max HR</th><th>TSS</th></tr></thead><tbody>';
   runs.slice(0,50).forEach(r => {
     h += `<tr><td>${fmtDateShort(r.date)}</td><td>${r.name.slice(0,35)}</td><td>${r.distance_mi} mi</td>
-      <td>${fmtPace(r.pace_mi)}/mi</td><td>${r.avgHR||'\u2013'}</td><td>${r.maxHR||'\u2013'}</td><td>${r.tss||'\u2013'}</td></tr>`;
+      <td>${fmtPace(r.pace_mi)}/mi</td><td>${r.gap_mi ? fmtPace(r.gap_mi)+'/mi' : '\u2013'}</td><td>${r.avgHR||'\u2013'}</td><td>${r.maxHR||'\u2013'}</td><td>${r.tss||'\u2013'}</td></tr>`;
   });
   document.getElementById('run-table').innerHTML = h + '</tbody></table>';
 
@@ -1410,19 +1587,19 @@ function renderRunning(S) {
     const xMin = cutoff.toISOString().slice(0,10);
     const xMax = new Date().toISOString().slice(0,10);
     const xUnit = runRange === '12w' ? 'week' : runRange === '5y' ? 'quarter' : 'month';
-    const pr = runs.filter(r=>r.pace_mi && r.date >= xMin).reverse();
+    const pr = runs.filter(r=>r.date >= xMin).reverse();
     if(charts.pace) charts.pace.destroy();
     charts.pace = new Chart(document.getElementById('paceTrendChart'),{
       type:'line', plugins:[crosshairPlugin, edgeExtendPlugin],
-      data:{datasets:[{ label:'Pace', data:pr.map(r=>({x:r.date,y:r.pace_mi})), ...dotStyle('--color-run', {pointRadius:0, pointHitRadius:10, pointHoverRadius:0}) }]},
+      data:{datasets:[{ label:'GAP', data:pr.filter(r=>r.gap_mi).map(r=>({x:r.date,y:r.gap_mi})), ...dotStyle('--color-run', {pointRadius:0, pointHitRadius:10, pointHoverRadius:0}) }]},
       options: chartOpts({
         interaction:{ mode:'nearest', intersect:false, axis:'x' },
         scales:{
           x:{type:'time',offset:false,min:xMin,max:xMax,time:{unit:xUnit,displayFormats:{week:"MMM d",month:"MMM ''yy"}},ticks:{color:TC(),maxTicksLimit:12},grid:{color:GC(),offset:false}},
-          y:{reverse:true,ticks:{color:TC(),callback:v=>fmtPace(v)},grid:{color:GC()},title:{display:true,text:'Pace (min/mi)',color:TC()}},
+          y:{reverse:true,ticks:{color:TC(),callback:v=>fmtPace(v)},grid:{color:GC()},title:{display:true,text:'Grade Adjusted Pace (min/mi)',color:TC()}},
         },
         plugins:{legend:{display:false},tooltip:{callbacks:{
-          _formatLine: (dp, ds) => `Pace: ${fmtPace(dp.parsed.y)}/mi`
+          _formatLine: (dp, ds) => `GAP: ${fmtPace(dp.parsed.y)}/mi`
         }}}
       })
     });
@@ -1718,43 +1895,91 @@ function generateInsights(S) {
   const insights = [];
   const actual = D.tsb.filter(d => !d.projected);
   const today = actual[actual.length - 1] || {};
-  const tsb = today.tsb || 0, ctl = today.ctl || 0, atl = today.atl || 0;
+  const tsb = today.tsb || 0;
+  const ctl = today.ctl || 0;
+  const atl = today.atl || 0;
+
+  // ── 1. Training load direction ──
   const weekAgo = actual[Math.max(0, actual.length - 8)] || {};
   const ctlDelta = ctl - (weekAgo.ctl || ctl);
-  if (ctlDelta > 1) {
+  const ctlTrend = ctlDelta > 1 ? 'rising' : ctlDelta < -1 ? 'falling' : 'stable';
+  if (ctlTrend === 'rising') {
     insights.push({ color: 'green', title: 'Fitness Trending Up',
-      body: `CTL rose <strong>${ctlDelta.toFixed(1)}</strong> points this week (${weekAgo.ctl?.toFixed(0)||'?'} \u2192 ${ctl.toFixed(0)}).` });
-  } else if (ctlDelta < -1) {
+      body: `CTL rose <strong>${ctlDelta.toFixed(1)}</strong> points this week (${weekAgo.ctl?.toFixed(0) || '?'} → ${ctl.toFixed(0)}). Your training is building fitness. Keep the consistency but watch fatigue.`
+    });
+  } else if (ctlTrend === 'falling') {
     insights.push({ color: 'yellow', title: 'Fitness Declining',
-      body: `CTL dropped <strong>${Math.abs(ctlDelta).toFixed(1)}</strong> points this week.` });
+      body: `CTL dropped <strong>${Math.abs(ctlDelta).toFixed(1)}</strong> points this week. This could be intentional rest or a gap in training. If unplanned, getting back to consistent sessions will reverse this quickly.`
+    });
   } else {
     insights.push({ color: 'blue', title: 'Fitness Holding Steady',
-      body: `CTL is stable at <strong>${ctl.toFixed(0)}</strong>.` });
+      body: `CTL is stable at <strong>${ctl.toFixed(0)}</strong>. You're maintaining your current fitness level. To improve, gradually increase training volume or intensity.`
+    });
   }
+
+  // ── 2. Fatigue & readiness ──
   if (tsb < -30) {
-    insights.push({ color: 'red', title: 'High Fatigue', body: `TSB at <strong>${tsb.toFixed(0)}</strong>. Take an easy day.` });
+    insights.push({ color: 'red', title: 'High Fatigue — Recovery Needed',
+      body: `TSB is at <strong>${tsb.toFixed(0)}</strong>, well into the high-risk zone. You've been loading hard. Take an easy day or full rest day to avoid overtraining. Light activity only.`
+    });
   } else if (tsb < -10) {
-    insights.push({ color: 'green', title: 'Productive Load', body: `TSB at <strong>${tsb.toFixed(0)}</strong> -- optimal training zone.` });
+    insights.push({ color: 'green', title: 'Productive Training Load',
+      body: `TSB at <strong>${tsb.toFixed(0)}</strong> — you're in the optimal training zone. Fatigue is present but manageable. This is where fitness gains happen. A moderate session today is appropriate.`
+    });
   } else if (tsb < 5) {
-    insights.push({ color: 'blue', title: 'Balanced State', body: `TSB at <strong>${tsb.toFixed(0)}</strong>. Good for quality work.` });
+    insights.push({ color: 'blue', title: 'Balanced State',
+      body: `TSB at <strong>${tsb.toFixed(0)}</strong> — you're neither fresh nor fatigued. Good day for a quality workout: tempo run, threshold intervals, or a longer endurance session.`
+    });
   } else if (tsb <= 20) {
-    insights.push({ color: 'blue', title: 'Fresh & Ready', body: `TSB at <strong>${tsb.toFixed(0)}</strong>. Great for a hard session.` });
+    insights.push({ color: 'blue', title: 'Fresh & Ready',
+      body: `TSB at <strong>${tsb.toFixed(0)}</strong> — you're well-recovered. Great day for a hard session or race effort. Your body can absorb a big training stimulus right now.`
+    });
   } else {
-    insights.push({ color: 'yellow', title: 'Detraining Risk', body: `TSB at <strong>${tsb.toFixed(0)}</strong>. Resume structured training.` });
+    insights.push({ color: 'yellow', title: 'Detraining Risk',
+      body: `TSB at <strong>${tsb.toFixed(0)}</strong> — you're very fresh, which means you haven't been loading much. If this isn't a planned taper, consider getting back to structured training before fitness erodes.`
+    });
   }
-  const hrv = D.hrv || {}, bl = hrv.baseline || {}, hrvVal = hrv.lastNightAvg;
-  const blLow = bl.balancedLow || 0, blHigh = bl.balancedUpper || 0;
+
+  // ── 3. HRV signal ──
+  const hrv = D.hrv || {};
+  const bl = hrv.baseline || {};
+  const hrvVal = hrv.lastNightAvg;
+  const blLow = bl.balancedLow || 0;
+  const blHigh = bl.balancedUpper || 0;
   if (hrvVal && blLow && blHigh) {
-    if (hrvVal < blLow) insights.push({ color: 'red', title: 'HRV Below Baseline', body: `HRV ${hrvVal} ms (baseline: ${blLow}-${blHigh}). Prioritize recovery.` });
-    else if (hrvVal > blHigh) insights.push({ color: 'green', title: 'HRV Above Baseline', body: `HRV ${hrvVal} ms. Well-recovered. Push harder today.` });
-    else insights.push({ color: 'green', title: 'HRV Normal', body: `HRV ${hrvVal} ms. Train as planned.` });
+    if (hrvVal < blLow) {
+      insights.push({ color: 'red', title: 'HRV Below Baseline',
+        body: `Last night's HRV was <strong>${hrvVal} ms</strong> (baseline: ${blLow}–${blHigh}). Your nervous system is signaling fatigue or stress. Prioritize sleep, hydration, and easy activity today.`
+      });
+    } else if (hrvVal > blHigh) {
+      insights.push({ color: 'green', title: 'HRV Above Baseline',
+        body: `Last night's HRV was <strong>${hrvVal} ms</strong>, above your baseline range. Your body is well-recovered. Good opportunity for a harder training session.`
+      });
+    } else {
+      insights.push({ color: 'green', title: 'HRV Within Baseline',
+        body: `Last night's HRV was <strong>${hrvVal} ms</strong> (baseline: ${blLow}–${blHigh}). Recovery looks normal. Train as planned.`
+      });
+    }
   }
-  let sug = '';
-  if (tsb < -25) sug = 'Rest day or very light recovery activity.';
-  else if (tsb < -10) sug = 'Moderate session -- steady-state or tempo work.';
-  else if (tsb < 5) sug = 'Quality session -- threshold intervals or race-pace.';
-  else sug = 'You\'re fresh -- great for your hardest workout of the week.';
-  insights.push({ color: 'blue', title: 'Today\'s Suggestion', body: sug });
+
+  // ── 4. Today's suggestion ──
+  const dayOfWeek = new Date().getDay(); // 0=Sun
+  let suggestion = '';
+  if (tsb < -25) {
+    suggestion = 'Rest day or very light recovery activity (easy walk, gentle swim). Your body needs to absorb recent training.';
+  } else if (tsb < -10) {
+    if (dayOfWeek === 0 || dayOfWeek === 1) {
+      suggestion = 'Easy aerobic session — Zone 2 run or recovery spin. Save intensity for mid-week when fatigue settles.';
+    } else {
+      suggestion = 'Moderate session — steady-state threshold work or tempo intervals. You have room to push a bit.';
+    }
+  } else if (tsb < 5) {
+    suggestion = 'Quality session day — threshold intervals, hill repeats, or a race-pace workout. You\'re balanced and can handle intensity.';
+  } else {
+    suggestion = 'You\'re fresh — great day for your hardest workout of the week: long intervals, time trial effort, or a long endurance session.';
+  }
+  insights.push({ color: 'blue', title: 'Today\'s Suggestion', body: suggestion });
+
   return insights;
 }
 
