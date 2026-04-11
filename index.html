@@ -6,7 +6,7 @@
 <title>TrainingHub</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-<script src="engine.js?v=8"></script>
+<script src="engine.js?v=10"></script>
 <script src="strava.js?v=5"></script>
 <style>
 :root, [data-theme="dark"] {
@@ -228,10 +228,10 @@ tr:hover td { background: var(--bg-hover); }
 .setting-row .setting-label { font-size: var(--text-base); font-weight: var(--fw-medium); }
 .setting-row .setting-desc { font-size: var(--text-sm); color: var(--text-faint); margin-top: 2px; }
 .setting-row .auto-val { font-size: var(--text-caption); color: var(--text-faint); font-family: var(--mono); }
-.setting-row input[type="number"] {
+.setting-row input[type="number"], .setting-row input[type="text"] {
   background: var(--bg-input); border: 1px solid var(--border); color: var(--text);
   padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); width: 100%; font-size: var(--text-base);
-  font-family: var(--mono); transition: border-color 0.2s;
+  font-family: var(--mono); transition: border-color 0.2s; box-sizing: border-box;
 }
 .setting-row input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-soft); }
 
@@ -275,8 +275,8 @@ tr:hover td { background: var(--bg-hover); }
   padding: 0 var(--space-3); border-radius: var(--radius-sm); font-size: var(--text-base); font-family: var(--font);
   transition: border-color 0.2s; box-sizing: border-box;
 }
-.ql-form input[type="number"] { -webkit-appearance: auto; -moz-appearance: auto; appearance: auto; color-scheme: dark; }
-[data-theme="light"] .ql-form input[type="number"] { color-scheme: light; }
+input[type="number"] { -webkit-appearance: auto; -moz-appearance: auto; appearance: auto; color-scheme: dark; }
+[data-theme="light"] input[type="number"] { color-scheme: light; }
 .ql-form select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23888'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;
@@ -325,6 +325,21 @@ tr:hover td { background: var(--bg-hover); }
   background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;
 }
 .evt-form input:focus, .evt-form select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-soft); }
+.race-calc-form {
+  display: grid; grid-template-columns: 140px 180px auto; gap: var(--space-3); align-items: end;
+}
+.race-calc-form label { display: block; font-size: var(--text-sm); font-weight: var(--fw-medium); color: var(--text-faint); margin-bottom: var(--space-1); }
+.race-calc-form input, .race-calc-form select {
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  width: 100%; height: 36px; background: var(--bg); border: 1px solid var(--border-active); color: var(--text);
+  padding: 0 var(--space-3); border-radius: var(--radius-sm); font-size: var(--text-base); font-family: var(--font);
+  transition: border-color 0.2s; box-sizing: border-box;
+}
+.race-calc-form select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23888'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;
+}
+.race-calc-form input:focus, .race-calc-form select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-soft); }
 .btn {
   background: none; border: 1px solid var(--border); color: var(--text-dim);
   padding: 7px 14px; border-radius: var(--radius-sm); cursor: pointer; font-size: var(--text-caption);
@@ -341,6 +356,26 @@ tr:hover td { background: var(--bg-hover); }
 .zone-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; vertical-align: middle; }
 
 /* ── Welcome Overlay ── */
+.calc-tabs { display: flex; gap: var(--space-2); margin-bottom: var(--space-4); }
+.calc-tabs button {
+  font-size: var(--text-sm); font-weight: var(--fw-medium); color: var(--text-dim);
+  padding: 5px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: transparent; cursor: pointer; transition: all 0.15s;
+}
+.calc-tabs button:hover { border-color: var(--blue); color: var(--blue); }
+.calc-tabs button.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.calc-section { display: none; }
+.calc-section.active { display: block; }
+.learn-toc {
+  display: flex; flex-wrap: wrap; gap: var(--space-2);
+}
+.learn-toc a {
+  font-size: var(--text-sm); color: var(--text-dim); text-decoration: none;
+  padding: 4px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.learn-toc a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+.learn-card[id] { scroll-margin-top: 20px; }
 .welcome-overlay {
   position: fixed; inset: 0; z-index: 1000;
   background: var(--bg); display: flex; align-items: center; justify-content: center;
@@ -349,7 +384,7 @@ tr:hover td { background: var(--bg-hover); }
 .welcome-box {
   max-width: 480px; width: 100%; padding: 48px; text-align: center;
 }
-.welcome-box svg { width: 48px; height: 48px; color: var(--blue); margin-bottom: var(--space-5); }
+.welcome-box > svg { width: 48px; height: 48px; color: var(--blue); margin-bottom: var(--space-5); }
 .welcome-box h1 { font-size: var(--text-3xl); font-weight: var(--fw-bold); margin-bottom: var(--space-2); }
 .welcome-box h1 span { color: var(--blue); }
 .welcome-box p { font-size: var(--text-md); color: var(--text-dim); line-height: 1.6; margin-bottom: var(--space-8); }
@@ -370,6 +405,8 @@ tr:hover td { background: var(--bg-hover); }
 }
 .btn-import:hover { border-color: var(--border-active); color: var(--text); background: var(--bg-hover); }
 .welcome-divider { font-size: var(--text-caption); color: var(--text-faint); }
+.welcome-help { font-size: var(--text-caption); color: var(--text-dim); text-decoration: none; }
+.welcome-help:hover { color: var(--blue); text-decoration: underline; }
 #sync-status { font-size: var(--text-base); color: var(--blue); margin-top: var(--space-3); }
 
 /* ── Sync button in sidebar ── */
@@ -410,18 +447,19 @@ tr:hover td { background: var(--bg-hover); }
       <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
     </svg>
     <h1>Training<span>Hub</span></h1>
-    <p>Your personal training dashboard. Connect Strava to sync your workouts, or import workout files (.fit, .gpx, .tcx, .json).</p>
+    <p>Your personal training dashboard. Connect Strava to sync your workouts, or import an activity export from Strava or Garmin.</p>
     <div class="welcome-actions">
       <button class="btn-strava" id="welcome-strava-btn">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
         Connect with Strava
       </button>
       <div class="welcome-divider">or</div>
       <button class="btn-import" id="welcome-import-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Import JSON File
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import Activity Export
       </button>
-      <input type="file" id="import-file" accept=".json,.fit,.gpx,.tcx" style="display:none">
+      <input type="file" id="import-file" accept=".json,.fit,.gpx,.tcx" multiple style="display:none">
+      <a href="export-help.html" class="welcome-help">How to export from Strava or Garmin</a>
     </div>
     <div id="sync-status"></div>
   </div>
@@ -495,11 +533,11 @@ tr:hover td { background: var(--bg-hover); }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
       <span>Sync</span>
     </button>
-    <button class="sync-btn" id="import-btn-sidebar" title="Import JSON">
+    <button class="sync-btn" id="import-btn-sidebar" title="Import activity files">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       <span>Import</span>
     </button>
-    <input type="file" id="import-file-sidebar" accept=".json,.fit,.gpx,.tcx" style="display:none">
+    <input type="file" id="import-file-sidebar" accept=".json,.fit,.gpx,.tcx" multiple style="display:none">
   </div>
 
   <div class="sidebar-footer">
@@ -521,9 +559,9 @@ tr:hover td { background: var(--bg-hover); }
   -->
   <div class="card" id="insights-card"></div>
   <div class="stack">
-    <div class="card">
+    <div class="card" id="pmc-card">
       <div class="card-title-row">
-        <h3>Fitness &amp; Fatigue</h3>
+        <h3>Performance Management</h3>
         <div class="range-toggle" id="range-toggle">
           <button class="range-btn" data-range="12w">12 weeks</button>
           <button class="range-btn" data-range="6m">6 months</button>
@@ -533,11 +571,7 @@ tr:hover td { background: var(--bg-hover); }
         </div>
       </div>
       <div class="chart-wrap"><canvas id="tsbChart"></canvas></div>
-      <p class="chart-note">CTL (blue) = 42-day fitness trend &middot; ATL (purple) = 7-day fatigue trend &middot; Dashed lines = projected with complete rest</p>
-    </div>
-    <div class="card">
-      <div class="card-title-row"><h3>Form</h3></div>
-      <div class="chart-wrap-sm"><canvas id="formChart"></canvas></div>
+      <div class="chart-wrap-sm" style="margin-top:-4px;"><canvas id="formChart"></canvas></div>
       <div class="form-legend">
         <span style="background:var(--yellow-soft);color:var(--text-dim);">Transition (20+)</span>
         <span style="background:var(--blue-soft);color:var(--text-dim);">Fresh (5 to 20)</span>
@@ -545,6 +579,7 @@ tr:hover td { background: var(--bg-hover); }
         <span style="background:var(--green-soft);color:var(--text-dim);">Optimal (-10 to -30)</span>
         <span style="background:var(--red-soft);color:var(--text-dim);">High Risk (&lt;-30)</span>
       </div>
+      <p class="chart-note">CTL (blue) = 42-day fitness trend &middot; ATL (purple) = 7-day fatigue trend &middot; Dashed lines = projected with complete rest</p>
     </div>
     <div class="card">
       <div class="card-title-row"><h3>Weekly Volume</h3></div>
@@ -684,7 +719,16 @@ tr:hover td { background: var(--bg-hover); }
 
   <div class="learn-content">
 
-    <div class="card learn-card">
+    <div class="learn-toc">
+      <a href="#learn-tsb">Fitness, Fatigue & Form</a>
+      <a href="#learn-tss">TSS Calculation</a>
+      <a href="#learn-thresholds">Key Thresholds</a>
+      <a href="#learn-zones">Training Zones</a>
+      <a href="#learn-power">Power Curve</a>
+      <a href="#learn-rpe">RPE</a>
+    </div>
+
+    <div class="card learn-card" id="learn-tsb">
       <div class="card-label">Fitness, Fatigue & Form (TSB Model)</div>
 
       <div class="learn-sub">
@@ -737,7 +781,7 @@ tr:hover td { background: var(--bg-hover); }
       </div>
     </div>
 
-    <div class="card learn-card">
+    <div class="card learn-card" id="learn-tss">
       <div class="card-label">Training Stress Score (TSS) — How It's Calculated</div>
       <p>TSS is calculated differently for each sport, but the principle is the same: <strong>how hard did you go, relative to your threshold, and for how long?</strong></p>
 
@@ -787,7 +831,8 @@ tr:hover td { background: var(--bg-hover); }
       </div>
     </div>
 
-    <div class="card learn-card">
+    <!-- HRV card hidden until Garmin Health API integration
+    <div class="card learn-card" id="learn-hrv">
       <div class="card-label">Heart Rate Variability (HRV)</div>
       <p>HRV measures the variation in time between consecutive heartbeats, reported in milliseconds. It's controlled by your autonomic nervous system — the same system that manages stress, recovery, digestion, and sleep.</p>
 
@@ -807,8 +852,65 @@ tr:hover td { background: var(--bg-hover); }
         <p>Don't overreact to a single day. HRV is noisy — one low reading after a hard workout is normal. Watch for <strong>trends over 3-5 days</strong>. Consistently below baseline is a real signal worth acting on.</p>
       </div>
     </div>
+    -->
 
-    <div class="card learn-card">
+    <div class="card learn-card" id="learn-thresholds">
+      <div class="card-label">Key Thresholds</div>
+
+      <div class="learn-sub">
+        <h4>FTP — Functional Threshold Power</h4>
+        <p>The highest power (in watts) you can sustain for approximately one hour. It's the anchor for all cycling power zones and cycling TSS. TrainingHub auto-estimates FTP from your best 20-minute power efforts, but the most accurate method is a <strong>20-minute FTP test</strong>.</p>
+
+        <h4 style="margin-top:16px;">How to Test Your FTP</h4>
+        <ol style="margin:8px 0 8px 20px;font-size:var(--text-base);line-height:1.7;">
+          <li><strong>Warm up</strong> — 20 minutes of easy spinning, include a few 1-minute efforts to open the legs.</li>
+          <li><strong>5-minute blow-out</strong> — ride hard for 5 minutes to pre-fatigue your anaerobic system, then recover for 5 minutes easy.</li>
+          <li><strong>20-minute all-out effort</strong> — ride at the highest power you can sustain for the full 20 minutes. Use a flat road or trainer. Pace evenly — starting too hard will produce a lower result.</li>
+          <li><strong>Record your average power</strong> for the 20-minute effort.</li>
+          <li><strong>Calculate:</strong> FTP = Average Power &times; 0.95</li>
+        </ol>
+        <p>For example, if your average power over 20 minutes is 250W, your FTP = 250 &times; 0.95 = <strong>238W</strong>.</p>
+        <p style="margin-top:8px;">Enter your 20-min average power in the <strong>FTP Calculator</strong> on the Settings page. Re-test every 6-8 weeks or after a training block.</p>
+      </div>
+
+      <div class="learn-sub">
+        <h4>LTHR — Lactate Threshold Heart Rate</h4>
+        <p>The heart rate at your lactate threshold — the point where lactate accumulates faster than your body can clear it. Above this intensity, you fatigue rapidly. TrainingHub auto-detects separate running and cycling LTHRs, but for the most accurate value, use Joe Friel's <strong>30-minute time trial test</strong>.</p>
+
+        <h4 style="margin-top:16px;">How to Test Your LTHR</h4>
+        <ol style="margin:8px 0 8px 20px;font-size:var(--text-base);line-height:1.7;">
+          <li><strong>Warm up</strong> — 15 minutes easy with a few short pickups.</li>
+          <li><strong>Run (or ride) 30 minutes all-out</strong> — solo, on a flat course. This should feel like a hard race effort you can barely sustain.</li>
+          <li><strong>Hit the lap button at 10 minutes</strong> — this splits the effort so you can isolate the last 20 minutes.</li>
+          <li><strong>Record your average HR for the last 20 minutes</strong> — this is your LTHR.</li>
+        </ol>
+        <p>The first 10 minutes are discarded because HR takes time to rise to steady state. The last 20 minutes represent your true threshold HR.</p>
+        <p style="margin-top:8px;">Enter your result in the <strong>LTHR Calculator</strong> on the Settings page. Test running and cycling separately — LTHR is sport-specific (cycling LTHR is typically 5-10 bpm lower than running).</p>
+      </div>
+
+      <div class="learn-sub">
+        <h4>CSS — Critical Swim Speed</h4>
+        <p>The swimming equivalent of threshold — the fastest pace you can sustain for roughly 30 minutes of continuous swimming. All swim pace zones are based on this number. TrainingHub can auto-estimate CSS from your activity history, but the gold standard is the <strong>400m / 200m time trial test</strong>.</p>
+
+        <h4 style="margin-top:16px;">How to Test Your CSS</h4>
+        <ol style="margin:8px 0 8px 20px;font-size:var(--text-base);line-height:1.7;">
+          <li><strong>Warm up</strong> — 10-15 minutes of easy swimming with drills.</li>
+          <li><strong>Swim 400m all-out</strong> — best sustainable effort for the full distance. Record your time.</li>
+          <li><strong>Rest 5-10 minutes</strong> — easy swimming or rest.</li>
+          <li><strong>Swim 200m all-out</strong> — slightly faster effort over the shorter distance. Record your time.</li>
+          <li><strong>Calculate:</strong> CSS (m/s) = 200 &divide; (T<sub>400</sub> &minus; T<sub>200</sub>)</li>
+        </ol>
+        <p>For example, if you swim 400m in 7:20 (440s) and 200m in 3:30 (210s), your CSS = 200 &divide; (440 &minus; 210) = <strong>0.87 m/s</strong>, or about <strong>1:54/100yd</strong>.</p>
+        <p style="margin-top:8px;">Enter your times in the <strong>CSS Calculator</strong> on the Settings page to apply. Re-test every 6-8 weeks to track improvement.</p>
+      </div>
+
+      <div class="learn-sub">
+        <h4>FTP in W/kg</h4>
+        <p>FTP divided by body weight. This normalizes cycling power across riders of different sizes. A 60kg rider at 240W and an 80kg rider at 320W both produce 4.0 W/kg — and they'll climb at similar speeds. W/kg is the best single metric for comparing cycling fitness.</p>
+      </div>
+    </div>
+
+    <div class="card learn-card" id="learn-zones">
       <div class="card-label">Training Zones</div>
       <p>Zones divide your effort range into distinct intensity bands, each targeting different physiological systems. Training in the right zone ensures the workout achieves its intended purpose.</p>
 
@@ -848,12 +950,42 @@ tr:hover td { background: var(--bg-hover); }
       </div>
 
       <div class="learn-sub">
+        <h4>Running Pace Zones (Friel Model)</h4>
+        <p>Based on your threshold pace — the fastest pace you could sustain for approximately one hour. Threshold pace can be auto-detected from your run data, calculated from a race time using the Jack Daniels VDOT formula, or set manually in Settings. Each zone is a percentage of threshold pace:</p>
+        <table class="learn-table">
+          <thead><tr><th>Zone</th><th>Name</th><th>% Threshold</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Recovery</td><td>129–150%</td><td>Easy jogging, warmup/cooldown</td></tr>
+            <tr><td>2</td><td>Aerobic</td><td>114–129%</td><td>Base endurance, long runs</td></tr>
+            <tr><td>3</td><td>Tempo</td><td>106–113%</td><td>Steady-state effort, marathon pace range</td></tr>
+            <tr><td>4</td><td>Sub-Threshold</td><td>101–105%</td><td>Sustained hard effort, half-marathon pace</td></tr>
+            <tr><td>5a</td><td>Threshold</td><td>97–100%</td><td>Tempo runs, cruise intervals</td></tr>
+            <tr><td>5b</td><td>VO2max</td><td>90–96%</td><td>Interval training (3-5 min repeats)</td></tr>
+            <tr><td>5c</td><td>Anaerobic</td><td>80–90%</td><td>Short repeats, speed work</td></tr>
+          </tbody>
+        </table>
+        <p>Note: for pace zones, a higher percentage means <em>slower</em> (more seconds per mile). Zone 1 at 150% of a 7:00 threshold pace is 10:30/mi.</p>
+      </div>
+
+      <div class="learn-sub">
         <h4>Swimming Pace Zones (CSS-Based)</h4>
-        <p>Based on your Critical Swim Speed — the fastest pace you can hold for roughly 30 minutes. CSS zones help you train the right energy systems in the pool, from easy recovery laps to race-pace intervals.</p>
+        <p>Based on your Critical Swim Speed — the fastest pace you can hold for roughly 30 minutes. Each zone is a percentage of your CSS pace per 100 yards:</p>
+        <table class="learn-table">
+          <thead><tr><th>Zone</th><th>Name</th><th>% CSS</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Recovery</td><td>120–140%</td><td>Easy swimming, warmup/cooldown</td></tr>
+            <tr><td>2</td><td>Endurance</td><td>108–119%</td><td>Aerobic base, long sets</td></tr>
+            <tr><td>3</td><td>Tempo/CSS</td><td>98–107%</td><td>Threshold pace, sustained sets</td></tr>
+            <tr><td>4</td><td>Threshold</td><td>92–97%</td><td>Race-pace intervals</td></tr>
+            <tr><td>5</td><td>VO2max</td><td>85–91%</td><td>High-intensity repeats (50-200m)</td></tr>
+            <tr><td>6</td><td>Sprint</td><td>70–84%</td><td>All-out sprints (25-50m)</td></tr>
+          </tbody>
+        </table>
+        <p>Like running pace zones, a higher percentage means <em>slower</em> (more time per 100 yards).</p>
       </div>
     </div>
 
-    <div class="card learn-card">
+    <div class="card learn-card" id="learn-power">
       <div class="card-label">Power Curve</div>
       <p>The power curve (on the Cycling page) plots your <strong>best power output at every duration</strong> across all rides in the selected time range. Each point answers: "What's the hardest I've ever gone for X seconds/minutes/hours?"</p>
       <ul>
@@ -864,32 +996,8 @@ tr:hover td { background: var(--bg-hover); }
       <p>The shape of your curve reveals your strengths. A steep left side with a big drop-off means you're a sprinter. A flat curve that holds up over time means you're a diesel — strong at sustained efforts. As your training progresses, watch the curve shift upward across all durations.</p>
     </div>
 
-    <div class="card learn-card">
-      <div class="card-label">Key Thresholds</div>
-
-      <div class="learn-sub">
-        <h4>FTP — Functional Threshold Power</h4>
-        <p>The highest power (in watts) you can sustain for approximately one hour. It's the anchor for all cycling power zones and cycling TSS. TrainingHub estimates your FTP from your best 20-minute power efforts (multiplied by 0.95). You can override it in Settings if you've done a formal FTP test.</p>
-      </div>
-
-      <div class="learn-sub">
-        <h4>LTHR — Lactate Threshold Heart Rate</h4>
-        <p>The heart rate at your lactate threshold — the point where lactate accumulates faster than your body can clear it. Above this intensity, you "go anaerobic" and fatigue accumulates rapidly. TrainingHub calculates separate running and cycling LTHRs from your workout data.</p>
-      </div>
-
-      <div class="learn-sub">
-        <h4>CSS — Critical Swim Speed</h4>
-        <p>The swimming equivalent of threshold. Estimated from your best efforts at different distances. Swim at CSS pace and you can sustain it for an extended period; go above it and you'll fade quickly. All swim pace zones are based on this number.</p>
-      </div>
-
-      <div class="learn-sub">
-        <h4>W/kg — Watts Per Kilogram</h4>
-        <p>FTP divided by body weight. This normalizes cycling power across riders of different sizes. A 60kg rider at 240W and an 80kg rider at 320W both produce 4.0 W/kg — and they'll climb at similar speeds. W/kg is the best single metric for comparing cycling fitness.</p>
-      </div>
-    </div>
-
-    <div class="card learn-card">
-      <h3>RPE — Rate of Perceived Exertion</h3>
+    <div class="card learn-card" id="learn-rpe">
+      <div class="card-label">RPE — Rate of Perceived Exertion</div>
       <p>RPE is a subjective 1–10 scale for how hard a workout felt. It's useful for logging workouts without a heart rate monitor or power meter. TrainingHub uses RPE to estimate TSS when no device data is available.</p>
       <table class="learn-table">
         <tr><th>RPE</th><th>Effort</th><th>Description</th><th>~HR Zone</th></tr>
@@ -904,7 +1012,7 @@ tr:hover td { background: var(--bg-hover); }
         <tr><td>9</td><td>Near Max</td><td>All-out repeats, unsustainable beyond minutes</td><td>Z5</td></tr>
         <tr><td>10</td><td>Maximum</td><td>Sprint finish, absolute max effort</td><td>Z5+</td></tr>
       </table>
-      <p style="margin-top:12px">When you log an activity with RPE but no heart rate, TSS is estimated as: <strong>TSS = hours &times; IF&sup2; &times; 100</strong>, where the Intensity Factor (IF) is derived from the RPE-to-IF mapping above. This gives a reasonable training load estimate for activities like strength sessions, hikes, or any workout without a sensor.</p>
+      <p>When you log an activity with RPE but no heart rate, TSS is estimated as: <strong>TSS = hours &times; IF&sup2; &times; 100</strong>, where the Intensity Factor (IF) is derived from the RPE-to-IF mapping above. This gives a reasonable training load estimate for activities like strength sessions, hikes, or any workout without a sensor.</p>
     </div>
 
   </div>
@@ -913,13 +1021,67 @@ tr:hover td { background: var(--bg-hover); }
 <!-- SETTINGS -->
 <div id="settings" class="page">
   <h1 class="page-title">Settings</h1>
-  <p class="page-desc">Auto-calculated from your workout data. Override any value and zones + charts update instantly. Saved in your browser.</p>
+  <p class="page-desc">Estimated from your workout data and updated as new activities are added. Override any value manually and zones + charts update instantly. Saved in your browser.</p>
   <div class="card" style="max-width:780px">
     <div class="card-label">Training Parameters</div>
     <div id="settings-form"></div>
     <div style="display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
       <button id="save-overrides-btn" class="btn btn-primary">Export Overrides</button>
       <button id="reset-all-btn" class="btn">Reset All to Auto</button>
+    </div>
+  </div>
+  <div class="card" style="max-width:780px">
+    <div class="card-label">Threshold Calculators</div>
+    <p class="chart-note" style="margin-bottom:12px">Calculate your key thresholds from test results. Applied values override the estimated values.</p>
+    <div class="calc-tabs" id="calc-tabs">
+      <button class="active" data-calc="ftp">FTP</button>
+      <button data-calc="race">Running Pace</button>
+      <button data-calc="lthr">LTHR</button>
+      <button data-calc="css">CSS</button>
+    </div>
+    <div id="calc-ftp" class="calc-section active">
+      <p class="chart-note" style="margin-bottom:12px">Enter your average power from a 20-minute all-out cycling test. FTP = 95% of that value.</p>
+      <div class="race-calc-form" style="grid-template-columns:1fr auto;">
+        <div><label>20-min Avg Power (watts)</label><input type="number" id="ftp-20min" placeholder="e.g. 250" min="50" max="600"></div>
+        <button id="ftp-calc-btn" class="btn btn-primary" style="padding:8px 16px;white-space:nowrap;">Calculate</button>
+      </div>
+      <div id="ftp-result" class="chart-note" style="margin-top:12px"></div>
+    </div>
+    <div id="calc-race" class="calc-section">
+      <p class="chart-note" style="margin-bottom:12px">Enter a recent race result to calculate threshold pace via Jack Daniels' VDOT formula.</p>
+      <div class="race-calc-form">
+        <div><label>Distance</label>
+          <select id="race-dist">
+            <option value="5000">5K</option><option value="10000">10K</option>
+            <option value="21097.5">Half Marathon</option><option value="42195">Marathon</option>
+          </select>
+        </div>
+        <div><label>Time (h:mm:ss or mm:ss)</label><input type="text" id="race-time" placeholder="e.g. 25:30 or 1:45:00"></div>
+        <button id="race-calc-btn" class="btn btn-primary" style="padding:8px 16px;white-space:nowrap;">Calculate</button>
+      </div>
+      <div id="race-result" class="chart-note" style="margin-top:12px"></div>
+    </div>
+    <div id="calc-lthr" class="calc-section">
+      <p class="chart-note" style="margin-bottom:12px">Enter your average heart rate from the last 20 minutes of a 30-minute all-out time trial.</p>
+      <div class="race-calc-form" style="grid-template-columns:1fr 1fr auto;">
+        <div><label>Sport</label>
+          <select id="lthr-sport">
+            <option value="run">Running</option><option value="bike">Cycling</option>
+          </select>
+        </div>
+        <div><label>Avg HR (last 20 min)</label><input type="number" id="lthr-avghr" placeholder="e.g. 168" min="80" max="220"></div>
+        <button id="lthr-calc-btn" class="btn btn-primary" style="padding:8px 16px;white-space:nowrap;">Apply</button>
+      </div>
+      <div id="lthr-result" class="chart-note" style="margin-top:12px"></div>
+    </div>
+    <div id="calc-css" class="calc-section">
+      <p class="chart-note" style="margin-bottom:12px">Enter your 400m and 200m pool time trial results to calculate Critical Swim Speed.</p>
+      <div class="race-calc-form" style="grid-template-columns:1fr 1fr auto;">
+        <div><label>400m Time (mm:ss)</label><input type="text" id="css-t400" placeholder="e.g. 7:20"></div>
+        <div><label>200m Time (mm:ss)</label><input type="text" id="css-t200" placeholder="e.g. 3:30"></div>
+        <button id="css-calc-btn" class="btn btn-primary" style="padding:8px 16px;white-space:nowrap;">Calculate</button>
+      </div>
+      <div id="css-result" class="chart-note" style="margin-top:12px"></div>
     </div>
   </div>
   <div class="card" style="max-width:780px">
@@ -969,8 +1131,8 @@ const SETTINGS_KEYS = [
   { key: 'ftp', label: 'FTP', unit: 'W', desc: 'Functional Threshold Power' },
   { key: 'lthr_run', label: 'LTHR Run', unit: 'bpm', desc: 'Lactate threshold heart rate (running)' },
   { key: 'lthr_bike', label: 'LTHR Bike', unit: 'bpm', desc: 'Lactate threshold heart rate (cycling)' },
-  { key: 'threshold_pace_mi', label: 'Threshold Pace', unit: '/mi', format: fmtPace, desc: 'Running threshold pace per mile' },
-  { key: 'css_100yd', label: 'CSS', unit: '/100yd', format: fmtPace, desc: 'Critical Swim Speed per 100 yards' },
+  { key: 'threshold_pace_mi', label: 'Threshold Pace', unit: '/mi', format: fmtPace, desc: 'Running threshold pace per mile', paceInput: true },
+  { key: 'css_100yd', label: 'CSS', unit: '/100yd', format: fmtPace, desc: 'Critical Swim Speed per 100 yards', paceInput: true },
   { key: 'max_hr_run', label: 'Max HR Run', unit: 'bpm', desc: 'Maximum heart rate observed (running)' },
   { key: 'max_hr_bike', label: 'Max HR Bike', unit: 'bpm', desc: 'Maximum heart rate observed (cycling)' },
   { key: 'weight_lb', label: 'Weight', unit: 'lb', desc: 'Body weight (for W/kg calculation)' },
@@ -1166,12 +1328,76 @@ function legendLabels(opts) {
   return { ...base, ...opts };
 }
 // ── Global crosshair + custom tooltip ──
+// Linked chart groups: hovering one triggers crosshair on all in the group
+const linkedChartGroups = {};
+
 const crosshairPlugin = {
   id: 'crosshair',
+  _findNearest(chart, pixelX) {
+    let minDist = Infinity, ts = null, snapX = null;
+    chart.data.datasets.forEach((ds, di) => {
+      const meta = chart.getDatasetMeta(di);
+      if (!meta.data) return;
+      meta.data.forEach((pt, pi) => {
+        const d = Math.abs(pt.x - pixelX);
+        if (d < minDist) { minDist = d; ts = meta._parsed[pi]?.x; snapX = pt.x; }
+      });
+    });
+    return { ts, snapX };
+  },
+  afterEvent(chart, args) {
+    const evt = args.event;
+    if (!chart._linkedGroup) return;
+    const group = linkedChartGroups[chart._linkedGroup];
+    if (!group) return;
+    if (evt.type === 'mousemove' && evt.x >= chart.chartArea.left && evt.x <= chart.chartArea.right) {
+      // Always find nearest data point by pixel — never rely on tooltip state
+      const { ts, snapX } = this._findNearest(chart, evt.x);
+      if (ts == null) return;
+      chart._crosshairPx = snapX;
+      group.forEach(other => {
+        if (other === chart) return;
+        const xScale = other.scales.x;
+        if (!xScale) return;
+        const px = xScale.getPixelForValue(ts);
+        // Snap to nearest data point on the target chart
+        const near = this._findNearest(other, px);
+        other._crosshairPx = near.snapX != null ? near.snapX : px;
+        other.setActiveElements([]);
+        other.tooltip.setActiveElements(
+          other.data.datasets.map((ds, di) => {
+            const meta = other.getDatasetMeta(di);
+            let closest = 0, minDist = Infinity;
+            meta.data.forEach((pt, pi) => { const d = Math.abs(pt.x - px); if (d < minDist) { minDist = d; closest = pi; } });
+            return { datasetIndex: di, index: closest };
+          }).filter(e => {
+            const meta = other.getDatasetMeta(e.datasetIndex);
+            return meta.data[e.index] != null;
+          }),
+          { x: px, y: other.chartArea.top + 10 }
+        );
+        other.update('none');
+      });
+    } else if (evt.type === 'mouseout') {
+      chart._crosshairPx = null;
+      group.forEach(other => {
+        if (other === chart) return;
+        other._crosshairPx = null;
+        other.tooltip.setActiveElements([], {});
+        other.update('none');
+      });
+    }
+  },
   afterDraw(chart) {
-    const tooltip = chart.tooltip;
-    if (!tooltip || tooltip.opacity === 0 || !tooltip.dataPoints || !tooltip.dataPoints.length) return;
-    const x = tooltip.dataPoints[0].element.x;
+    let x = chart._crosshairPx;
+    // For non-linked charts, fall back to tooltip element position
+    if (x == null) {
+      const tp = chart.tooltip;
+      if (tp && tp.dataPoints && tp.dataPoints.length && tp.opacity !== 0) {
+        x = tp.dataPoints[0].element?.x;
+      }
+    }
+    if (x == null) return;
     const ctx = chart.ctx;
     const yAxis = chart.scales.y;
     ctx.save();
@@ -1184,6 +1410,13 @@ const crosshairPlugin = {
     ctx.restore();
   }
 };
+
+function registerLinkedChart(group, chart) {
+  chart._linkedGroup = group;
+  if (!linkedChartGroups[group]) linkedChartGroups[group] = [];
+  linkedChartGroups[group] = linkedChartGroups[group].filter(c => c.canvas); // clean destroyed
+  linkedChartGroups[group].push(chart);
+}
 
 const edgeExtendPlugin = {
   id: 'edgeExtend',
@@ -1302,9 +1535,16 @@ function buildExternalTooltip(chart, tooltip) {
     }
   }
   el.innerHTML = html;
-  const x = tooltip.dataPoints[0].element.x + 8;
+  const ptX = tooltip.dataPoints[0].element.x;
   const y = chart.scales.y.top;
-  el.style.left = x + 'px';
+  // Flip tooltip to left side if it would overflow the chart area
+  const elWidth = el.offsetWidth || 120;
+  const right = chart.chartArea.right;
+  if (ptX + 8 + elWidth > right) {
+    el.style.left = (ptX - 8 - elWidth) + 'px';
+  } else {
+    el.style.left = (ptX + 8) + 'px';
+  }
   el.style.top = y + 'px';
   el.style.opacity = '1';
 }
@@ -1324,7 +1564,9 @@ function chartOpts(opts) {
   merged.plugins.tooltip.callbacks = { ...titleCb, ...merged.plugins.tooltip.callbacks };
   // Apply crosshair tooltip to all charts by default
   merged.plugins.tooltip.enabled = false;
-  merged.plugins.tooltip.external = function(context) { buildExternalTooltip(context.chart, context.tooltip); };
+  if (!merged.plugins.tooltip._noBox) {
+    merged.plugins.tooltip.external = function(context) { buildExternalTooltip(context.chart, context.tooltip); };
+  }
   return merged;
 }
 
@@ -1544,6 +1786,7 @@ function renderDashboard(S) {
   const xUnit = dashRange === '12w' ? 'week' : dashRange === '5y' ? 'quarter' : 'month';
   const {xMin, xMax} = getXBounds();
   const sharedX = {type:'time',offset:false,min:xMin,max:xMax,time:{unit:xUnit,displayFormats:{week:"MMM d",month:"MMM ''yy"}},ticks:{color:TC(),maxTicksLimit:12},grid:{color:GC(),offset:false}};
+  const hiddenX = {...sharedX, ticks:{...sharedX.ticks, display:false}, grid:{...sharedX.grid}};
 
   const lifeEventsPlugin = {
     id: 'lifeEvents',
@@ -1559,7 +1802,10 @@ function renderDashboard(S) {
       if (meta && meta.data) {
         const ds = chart.data.datasets[0];
         meta.data.forEach((pt, i) => {
-          const label = chart.data.labels ? chart.data.labels[i] : (ds.data[i]?.x || null);
+          let label;
+          if (chart.data.labels && chart.data.labels.length) label = chart.data.labels[i];
+          else if (ds.data[i]?.x) label = ds.data[i].x;
+          else { const parsed = meta._parsed?.[i]; if (parsed?.x) label = new Date(parsed.x).toISOString().slice(0,10); }
           if (label) pxByDate[label] = pt.x;
         });
       }
@@ -1577,6 +1823,7 @@ function renderDashboard(S) {
   };
 
   if (charts.tsb) charts.tsb.destroy();
+  linkedChartGroups['pmc'] = [];
   charts.tsb = new Chart(document.getElementById('tsbChart'), {
     type:'line', plugins:[lifeEventsPlugin, crosshairPlugin],
     data:{ labels: allActual.map(d=>d.date), datasets:[
@@ -1588,18 +1835,45 @@ function renderDashboard(S) {
     ]},
     options: chartOpts({
       scales:{
-        x:sharedX,
-        y:{ticks:{color:TC()},grid:{color:GC()},title:{display:true,text:'Training Load',color:TC()}},
-        y1:{position:'right',ticks:{color:TC()},grid:{display:false},title:{display:true,text:'Daily TSS',color:TC()}},
+        x:hiddenX,
+        y:{ticks:{color:TC()},grid:{color:GC()},title:{display:true,text:'Training Load',color:TC()},afterFit(axis){axis.width=60;}},
+        y1:{position:'right',ticks:{color:TC()},grid:{display:false},title:{display:true,text:'Daily TSS',color:TC()},afterFit(axis){axis.width=60;}},
       },
-      plugins:{legend:{labels:legendLabels()},tooltip:{callbacks:{
+      plugins:{legend:{labels:legendLabels({
+        generateLabels(chart) {
+          const items = chart.data.datasets.map((ds, i) => ({
+            text: ds.label, datasetIndex: i, pointStyle: 'line', fontColor: LC(),
+            strokeStyle: ds.type === 'bar' ? css('--blue') : (ds.borderColor || ds.backgroundColor),
+            fillStyle: 'transparent',
+            lineDash: ds.borderDash ? [4,3] : [], lineWidth: 2,
+            hidden: !chart.isDatasetVisible(i)
+          }));
+          items.push({
+            text:'Form (TSB)', pointStyle:'line',
+            strokeStyle:css('--color-form'), fillStyle:'transparent',
+            lineDash:[], lineWidth:2, hidden:false, datasetIndex:99
+          });
+          return items;
+        }
+      })},tooltip:{callbacks:{
         _formatLine: (dp, ds) => {
           if (dp.parsed.y == null) return null;
           return `${ds.label}: ${Math.round(dp.parsed.y * 10) / 10}`;
+        },
+        _afterLines: (tooltip) => {
+          if (!tooltip.dataPoints || !tooltip.dataPoints.length) return '';
+          const ts = tooltip.dataPoints[0].parsed?.x;
+          if (!ts) return '';
+          const dpDate = new Date(ts).toISOString().slice(0,10);
+          const all = allActual.concat(projected);
+          const entry = all.find(d => d.date === dpDate);
+          if (!entry) return '';
+          return `<div style="color:${css('--color-form')}">Form (TSB): ${Math.round(entry.tsb * 10) / 10}</div>`;
         }
       }}}
     })
   });
+  registerLinkedChart('pmc', charts.tsb);
 
   const formPlugin = {
     id:'formBg',
@@ -1648,7 +1922,7 @@ function renderDashboard(S) {
 
   if(charts.form) charts.form.destroy();
   charts.form = new Chart(document.getElementById('formChart'),{
-    type:'line', plugins:[formPlugin, crosshairPlugin],
+    type:'line', plugins:[formPlugin, lifeEventsPlugin, crosshairPlugin],
     data:{datasets:[
       {label:'Form (TSB)',data:allActual.map(d=>({x:d.date,y:d.tsb})), _useFormGrad:true, _baseColor:css('--color-form'), ...lineStyle('--color-form')},
       {label:'Projected',data:projected.map(d=>({x:d.date,y:d.tsb})), _useFormGrad:true, _baseColor:css('--color-form'), ...projStyle('--color-form')},
@@ -1656,22 +1930,13 @@ function renderDashboard(S) {
     options: chartOpts({
       scales:{
         x:sharedX,
-        y:{min:-50,max:25,ticks:{color:TC()},grid:{color:GC()},title:{display:true,text:'Form (TSB)',color:TC()}},
-        y1:{position:'right',ticks:{color:'transparent'},grid:{display:false},title:{display:true,text:'Daily TSS',color:'transparent'}},
+        y:{min:-50,max:25,ticks:{color:TC()},grid:{color:GC()},title:{display:true,text:'Form (TSB)',color:TC()},afterFit(axis){axis.width=60;}},
+        y1:{position:'right',ticks:{color:'transparent'},grid:{display:false},title:{display:true,text:'Daily TSS',color:'transparent'},afterFit(axis){axis.width=60;}},
       },
-      plugins:{legend:{labels:legendLabels({
-        generateLabels(chart){
-          return chart.data.datasets.map((ds,i)=>({
-            text:ds.label,datasetIndex:i,pointStyle:'line',
-            strokeStyle:css('--color-form'),fillStyle:'transparent',
-            lineDash:ds.borderDash?[4,3]:[],lineWidth:2,hidden:!chart.isDatasetVisible(i)
-          }));
-        }
-      })},tooltip:{callbacks:{
-        _formatLine: (dp, ds) => dp.parsed.y != null ? `${ds.label}: ${Math.round(dp.parsed.y * 10) / 10}` : null
-      }}}
+      plugins:{legend:{display:false},tooltip:{_noBox:true,enabled:false,external:()=>{}}}
     })
   });
+  registerLinkedChart('pmc', charts.form);
 
   const wks = Object.keys(D.weekly_volume);
   const volLabels = wks.map(weekToDate);
@@ -1688,7 +1953,7 @@ function renderDashboard(S) {
       scales:{
         x:{...sharedX,stacked:true},
         y:{stacked:true,ticks:{color:TC()},grid:{color:GC()},title:{display:true,text:'Hours',color:TC()}},
-        y1:{position:'right',ticks:{color:'transparent'},grid:{display:false},title:{display:true,text:'Daily TSS',color:'transparent'}},
+        y1:{position:'right',ticks:{color:'transparent'},grid:{display:false},title:{display:true,text:'Daily TSS',color:'transparent'},afterFit(axis){axis.width=60;}},
       },
       plugins:{legend:{labels:legendLabels()},tooltip:{callbacks:{
         _formatLine: (dp, ds) => dp.parsed.y > 0 ? `${ds.label}: ${Math.round(dp.parsed.y * 10) / 10}h` : null
@@ -1761,7 +2026,7 @@ function renderCycling(S) {
   const wkg = (ftp !== '\u2013' && S.weight_lb) ? (ftp / (S.weight_lb / 2.205)).toFixed(1) : null;
   document.getElementById('bike-stats').innerHTML = `
     <div class="stat"><div class="value blue">${ftp}<small style="font-size:var(--text-caption);font-weight:var(--fw-normal);color:var(--text-dim)">W</small></div><div class="label">FTP</div></div>
-    ${wkg ? `<div class="stat"><div class="value blue">${wkg}</div><div class="label">W/kg</div></div>` : ''}
+    ${wkg ? `<div class="stat"><div class="value blue">${wkg}</div><div class="label">FTP (W/kg)</div></div>` : ''}
     <div class="stat"><div class="value blue">${S.lthr_bike}</div><div class="label">LTHR (bpm)</div></div>
     <div class="stat"><div class="value green">${vo2.length ? vo2[vo2.length-1].value : '\u2013'}</div><div class="label">VO2max</div></div>
     <div class="stat"><div class="value">${S.max_hr_bike}</div><div class="label">Max HR</div></div>
@@ -1935,19 +2200,29 @@ function renderSettings(S) {
   SETTINGS_KEYS.forEach(sk => {
     const auto = D.auto[sk.key];
     const cur = ov[sk.key];
-    const disp = sk.format ? sk.format(auto) : `${auto} ${sk.unit}`;
+    const disp = auto != null ? (sk.format ? sk.format(auto) : `${auto} ${sk.unit}`) : null;
     const has = cur != null;
+    const inputType = sk.paceInput ? 'text' : 'number';
+    const inputVal = has ? (sk.paceInput ? fmtPace(cur) : cur) : '';
+    const inputPh = sk.paceInput && auto != null ? fmtPace(auto) : (auto != null ? auto : '');
     h += `<div class="setting-row">
       <div><div class="setting-label">${sk.label}</div><div class="setting-desc">${sk.desc}</div></div>
-      <div class="auto-val">Auto: ${disp}</div>
-      <input type="number" id="setting-${sk.key}" value="${has?cur:''}" placeholder="${auto}" step="1">
+      <div class="auto-val">${disp ? 'Auto: ' + disp : ''}</div>
+      <input type="${inputType}" id="setting-${sk.key}" value="${inputVal}" placeholder="${inputPh}" ${sk.paceInput ? 'pattern="[0-9]+:[0-9]{2}"' : 'step="1"'}>
       <button class="btn" data-key="${sk.key}" ${!has?'disabled':''}>Reset</button>
     </div>`;
   });
   document.getElementById('settings-form').innerHTML = h;
   SETTINGS_KEYS.forEach(sk => {
     document.getElementById(`setting-${sk.key}`).addEventListener('change', e => {
-      const v = e.target.value ? parseInt(e.target.value) : null;
+      let v = null;
+      if (sk.paceInput) {
+        const parts = e.target.value.split(':');
+        if (parts.length === 2) v = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        if (isNaN(v)) v = null;
+      } else {
+        v = e.target.value ? parseInt(e.target.value) : null;
+      }
       const o = getOverrides();
       if (v != null) o[sk.key] = v; else delete o[sk.key];
       saveSettings(o); renderAll();
@@ -2002,6 +2277,96 @@ function renderSettings(S) {
     document.getElementById('evt-label').value = '';
     document.getElementById('evt-notes').value = '';
     renderEvtTable(); renderAll();
+  });
+
+  // Race time pace calculator
+  document.getElementById('race-calc-btn').addEventListener('click', () => {
+    const distM = parseFloat(document.getElementById('race-dist').value);
+    const timeStr = document.getElementById('race-time').value.trim();
+    if (!timeStr) return;
+    // Parse h:mm:ss or mm:ss or m:ss
+    const parts = timeStr.split(':').map(Number);
+    let timeSec;
+    if (parts.length === 3) timeSec = parts[0] * 3600 + parts[1] * 60 + parts[2];
+    else if (parts.length === 2) timeSec = parts[0] * 60 + parts[1];
+    else return;
+    if (!timeSec || timeSec <= 0) return;
+    const tp = thresholdPaceFromRace(distM, timeSec);
+    const easy = Math.round(tp * 1.2);
+    const el = document.getElementById('race-result');
+    el.innerHTML = `<strong>VDOT threshold pace: ${fmtPace(tp)}/mi</strong> &nbsp;|&nbsp; Easy pace: ${fmtPace(easy)}/mi<br>`
+      + `<button class="btn btn-primary" id="race-apply-btn" style="margin-top:8px;padding:6px 14px;font-size:var(--text-sm)">Apply as Threshold Pace</button>`;
+    document.getElementById('race-apply-btn').addEventListener('click', () => {
+      const o = getOverrides();
+      o.threshold_pace_mi = tp;
+      saveSettings(o);
+      renderAll();
+      el.innerHTML = `<span style="color:var(--green)">Applied! Threshold pace set to ${fmtPace(tp)}/mi</span>`;
+    });
+  });
+
+  // CSS time trial calculator
+  document.getElementById('css-calc-btn').addEventListener('click', () => {
+    const parse = s => { const p = s.trim().split(':').map(Number); return p.length === 2 ? p[0]*60+p[1] : NaN; };
+    const t400 = parse(document.getElementById('css-t400').value);
+    const t200 = parse(document.getElementById('css-t200').value);
+    if (!t400 || !t200 || t400 <= t200) {
+      document.getElementById('css-result').innerHTML = '<span style="color:var(--red)">Enter valid times (400m must be longer than 200m)</span>';
+      return;
+    }
+    const css = cssFromTimeTrial(t400, t200);
+    const el = document.getElementById('css-result');
+    el.innerHTML = `<strong>CSS: ${fmtPace(css)}/100yd</strong><br>`
+      + `<button class="btn btn-primary" id="css-apply-btn" style="margin-top:8px;padding:6px 14px;font-size:var(--text-sm)">Apply as CSS</button>`;
+    document.getElementById('css-apply-btn').addEventListener('click', () => {
+      const o = getOverrides();
+      o.css_100yd = css;
+      saveSettings(o);
+      renderAll();
+      el.innerHTML = `<span style="color:var(--green)">Applied! CSS set to ${fmtPace(css)}/100yd</span>`;
+    });
+  });
+
+  // Threshold calculator tabs
+  document.getElementById('calc-tabs').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-calc]');
+    if (!btn) return;
+    document.querySelectorAll('#calc-tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.calc-section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('calc-' + btn.dataset.calc).classList.add('active');
+  });
+
+  // FTP calculator (20-min test × 0.95)
+  document.getElementById('ftp-calc-btn').addEventListener('click', () => {
+    const avg = parseFloat(document.getElementById('ftp-20min').value);
+    if (!avg || avg <= 0) return;
+    const ftp = Math.round(avg * 0.95);
+    const el = document.getElementById('ftp-result');
+    el.innerHTML = `<strong>FTP: ${ftp}W</strong> (${avg}W &times; 0.95)<br>`
+      + `<button class="btn btn-primary" id="ftp-apply-btn" style="margin-top:8px;padding:6px 14px;font-size:var(--text-sm)">Apply as FTP</button>`;
+    document.getElementById('ftp-apply-btn').addEventListener('click', () => {
+      const o = getOverrides();
+      o.ftp = ftp;
+      saveSettings(o);
+      renderAll();
+      el.innerHTML = `<span style="color:var(--green)">Applied! FTP set to ${ftp}W</span>`;
+    });
+  });
+
+  // LTHR calculator (30-min TT, avg HR of last 20 min)
+  document.getElementById('lthr-calc-btn').addEventListener('click', () => {
+    const hr = parseInt(document.getElementById('lthr-avghr').value);
+    const sport = document.getElementById('lthr-sport').value;
+    if (!hr || hr <= 0) return;
+    const key = sport === 'run' ? 'lthr_run' : 'lthr_bike';
+    const label = sport === 'run' ? 'LTHR Run' : 'LTHR Bike';
+    const el = document.getElementById('lthr-result');
+    const o = getOverrides();
+    o[key] = hr;
+    saveSettings(o);
+    renderAll();
+    el.innerHTML = `<span style="color:var(--green)">Applied! ${label} set to ${hr} bpm</span>`;
   });
 
   // Data Source section
@@ -2366,16 +2731,20 @@ document.getElementById('welcome-import-btn').addEventListener('click', () => {
   document.getElementById('import-file').click();
 });
 document.getElementById('import-file').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  document.getElementById('sync-status').textContent = 'Importing...';
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  const status = document.getElementById('sync-status');
   try {
-    const acts = await loadFromImport(file);
+    let acts;
+    for (let i = 0; i < files.length; i++) {
+      status.textContent = `Importing ${i + 1} of ${files.length}...`;
+      acts = await loadFromImport(files[i]);
+    }
     D = computeAll(acts, getOverrides());
     document.getElementById('welcome-overlay').classList.add('hidden');
     renderAll();
   } catch(err) {
-    document.getElementById('sync-status').textContent = 'Import failed: ' + err.message;
+    status.textContent = 'Import failed: ' + err.message;
   }
 });
 
@@ -2395,10 +2764,13 @@ document.getElementById('import-btn-sidebar').addEventListener('click', () => {
   document.getElementById('import-file-sidebar').click();
 });
 document.getElementById('import-file-sidebar').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
   try {
-    const acts = await loadFromImport(file);
+    let acts;
+    for (let i = 0; i < files.length; i++) {
+      acts = await loadFromImport(files[i]);
+    }
     D = computeAll(acts, getOverrides());
     document.getElementById('welcome-overlay').classList.add('hidden');
     renderAll();

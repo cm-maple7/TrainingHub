@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Export Help — TrainingHub</title>
+<style>
+  :root {
+    --bg: #0e1117; --bg-card: #161b22; --text: #e6edf3; --text-dim: #8b949e;
+    --blue: #4e9af5; --border: #30363d; --font: 'Inter', -apple-system, sans-serif;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f8fa; --bg-card: #ffffff; --text: #1f2328; --text-dim: #656d76;
+      --blue: #2b7de9; --border: #d0d7de;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.7; padding: 48px 24px; }
+  .container { max-width: 640px; margin: 0 auto; }
+  a.back { color: var(--blue); text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 32px; }
+  a.back:hover { text-decoration: underline; }
+  h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+  .subtitle { color: var(--text-dim); font-size: 15px; margin-bottom: 40px; }
+  h2 { font-size: 18px; font-weight: 600; margin-bottom: 12px; margin-top: 36px; }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+  .card h2 { margin-top: 0; }
+  ol { padding-left: 20px; }
+  ol li { margin-bottom: 10px; font-size: 15px; }
+  ol li strong { font-weight: 600; }
+  .note { font-size: 13px; color: var(--text-dim); margin-top: 12px; line-height: 1.5; }
+  code { background: var(--border); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a class="back" href="index.html">&larr; Back to TrainingHub</a>
+  <h1>How to Export Your Data</h1>
+  <p class="subtitle">TrainingHub can import bulk activity exports from Strava and Garmin Connect.</p>
+
+  <div class="card">
+    <h2>Strava Bulk Export</h2>
+    <ol>
+      <li>Log in to <strong>Strava</strong> on a desktop browser.</li>
+      <li>Go to <strong>Settings</strong> &rarr; <strong>My Account</strong>.</li>
+      <li>Scroll to <strong>"Download or Delete Your Account"</strong> and click <strong>"Get Started"</strong>.</li>
+      <li>Under step 2, click <strong>"Request Your Archive"</strong>.</li>
+      <li>Strava will email you a download link (can take a few hours).</li>
+      <li>Download and unzip the archive. Your activities will be in the <code>activities</code> folder as <code>.fit</code>, <code>.gpx</code>, or <code>.tcx</code> files.</li>
+      <li>In TrainingHub, click <strong>Import Activity Export</strong> and select the files.</li>
+    </ol>
+    <p class="note">Note: You can select multiple files at once. TrainingHub supports .fit, .gpx, and .tcx formats.</p>
+  </div>
+
+  <div class="card">
+    <h2>Garmin Connect Bulk Export</h2>
+    <ol>
+      <li>Log in to <strong>Garmin Connect</strong> on a desktop browser.</li>
+      <li>Go to <a href="https://www.garmin.com/en-US/account/datamanagement/" style="color:var(--blue)">garmin.com/account/datamanagement</a>.</li>
+      <li>Click <strong>"Export Your Data"</strong>.</li>
+      <li>Select <strong>"Export Your Data"</strong> and confirm your request.</li>
+      <li>Garmin will email you a download link (can take up to 48 hours).</li>
+      <li>Download and unzip the archive. Activity files are typically in <code>.fit</code> format inside a fitness folder.</li>
+      <li>In TrainingHub, click <strong>Import Activity Export</strong> and select the <code>.fit</code> files.</li>
+    </ol>
+    <p class="note">Note: Garmin's export can be large. You only need the activity .fit files — other data (wellness, sleep, etc.) is not used by TrainingHub.</p>
+  </div>
+</div>
+</body>
+</html>

@@ -87,20 +87,57 @@ function estimateFtp(acts) {
   return best > 0 ? Math.round(best * 0.95) : null;
 }
 
-function estimateThresholdPace(acts) {
+function estimateThresholdPace(acts, lthr) {
+  const hrFloor = lthr ? lthr * 0.90 : 155;
   const candidates = [];
   for (const a of acts) {
-    if ((a.activityType || {}).typeKey !== 'running') continue;
+    const atype = (a.activityType || {}).typeKey || '';
+    if (atype !== 'running' && atype !== 'trail_running') continue;
     const speed = a.averageSpeed || 0;
     const dur = a.duration || 0;
     const avgHR = a.averageHR || 0;
-    if (speed <= 0 || dur < 1200 || !avgHR || avgHR <= 155) continue;
+    if (speed <= 0 || dur < 1200 || !avgHR || avgHR < hrFloor) continue;
     candidates.push(1609.344 / speed);
   }
   if (!candidates.length) return 530;
   candidates.sort((a, b) => a - b);
   const top = candidates.slice(0, Math.min(5, candidates.length));
   return Math.round(top.reduce((s, v) => s + v, 0) / top.length);
+}
+
+// Jack Daniels VDOT-based pace calculation from race time
+function vdotFromRace(distMeters, timeSec) {
+  // VO2 cost of running at given speed (ml/kg/min)
+  const v = distMeters / timeSec; // m/s
+  const vMin = v * 60; // m/min
+  const vo2 = -4.6 + 0.182258 * vMin + 0.000104 * vMin * vMin;
+  // Fraction of VO2max sustainable for given duration
+  const t = timeSec / 60; // minutes
+  const pctMax = 0.8 + 0.1894393 * Math.exp(-0.012778 * t) + 0.2989558 * Math.exp(-0.1932605 * t);
+  return vo2 / pctMax;
+}
+
+function vdotPace(vdot, fraction) {
+  // Given VDOT and %VO2max fraction, return pace in sec/mile
+  const vo2 = vdot * fraction;
+  // Inverse of VO2-speed equation: solve for vMin
+  // vo2 = -4.6 + 0.182258*vMin + 0.000104*vMin^2
+  const a = 0.000104, b = 0.182258, c = -4.6 - vo2;
+  const vMin = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+  const vMs = vMin / 60;
+  return Math.round(1609.344 / vMs);
+}
+
+function thresholdPaceFromRace(distMeters, timeSec) {
+  const vdot = vdotFromRace(distMeters, timeSec);
+  return vdotPace(vdot, 0.88); // threshold ~88% VO2max
+}
+
+function cssFromTimeTrial(t400sec, t200sec) {
+  // Industry standard: CSS = 200 / (T400 - T200) in meters/sec, convert to sec/100yd
+  const cssMs = 200 / (t400sec - t200sec);
+  const cssYdS = cssMs * M_TO_YD;           // yards per second
+  return Math.round(100 / cssYdS);           // seconds per 100 yards
 }
 
 function estimateCSS(acts) {
@@ -418,16 +455,17 @@ function computeAll(acts, overrides) {
   overrides = overrides || {};
   const maxHrs = estimateMaxHR(acts);
 
+  const lthrRun = estimateLthrRun(acts, maxHrs.run);
   const auto = {
     ftp: estimateFtp(acts),
-    lthr_run: estimateLthrRun(acts, maxHrs.run),
+    lthr_run: lthrRun,
     lthr_bike: estimateLthrBike(acts, maxHrs.bike),
-    threshold_pace_mi: estimateThresholdPace(acts),
+    threshold_pace_mi: estimateThresholdPace(acts, overrides.lthr_run || lthrRun),
     css_100yd: estimateCSS(acts),
     max_hr_run: maxHrs.run,
     max_hr_bike: maxHrs.bike,
     max_hr_swim: maxHrs.swim,
-    weight_lb: 210,
+    weight_lb: null,
   };
 
   // Effective = auto merged with overrides
